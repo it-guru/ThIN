@@ -18,181 +18,22 @@
 #include <ArduinoJson.h>      //        https://github.com/bblanchon/ArduinoJson/wiki/Encoding%20JSON
 
 #include <ESP8266HTTPClient.h>
+#include "./console.h"
+#include "./config.h"
 
 
  
 
-// int ets_vsprintf(char *str, const char *format, va_list argptr);
-// int ets_vsnprintf(char *buffer, size_t sizeOfBuffer,  const char *format, va_list argptr);
-int ets_vsprintf(char *str, const char *format, va_list arg);
-int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, size_t count, const char *format, va_list arg);
-
-#define CON_LED    1
-#define CON_SERIAL 2
-#define CON_TCP    4
-#define CON_NULL   0
-
-WiFiServer ConSrv(7);
-WiFiClient ConTcp;
-
 ESP8266WebServer WebSrv(80);
-
-
-class Con
-{
-   private:
-   int tDelay=10;
-   int curType;
-   int BlinkSpeed=0;
-   int BlinkTimer=0;
-   int BlinkState=0;
-   int BlinkWhile=0;
-   
-
-   virtual void setup_SERIAL(){
-      Serial.begin(9600);
-      Serial.println("");
-      this->mdelay(100);
-   }
-   virtual void setup_LED(){
-      pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
-   }
-   virtual void setup_TCP(){
-      
-   }
-   
-   public:
-   virtual void TCPhandler(){
-      if (this->curType&CON_TCP){
-         if (ConSrv.hasClient()){
-            if (ConTcp.connected()){
-               ConTcp.stop();
-            }
-            ConTcp=ConSrv.available();
-            ConTcp.write("Hello\n",6);
-         }  
-      }
-   }
-   virtual void handleWiFiConnect(){
-     this->printf("handleWiFiConnect %d\n",this->curType&CON_TCP);
-     if (this->curType&CON_TCP){
-        ConSrv.begin();
-        ConSrv.setNoDelay(true);   
-     }
-   }
-   virtual void setBlink(int newBlink){
-      if (this->curType&CON_SERIAL){
-         if (BlinkState==1 && newBlink==0){
-            this->printf("Blink off\n");
-         }
-         else if (BlinkState==0 && newBlink!=0){
-            this->printf("Blink on\n");
-         }
-      }
-      if (curType&CON_LED){
-         if (BlinkState==1 && newBlink==0){
-            digitalWrite(LED_BUILTIN, HIGH);
-         }
-         else if (BlinkState==0 && newBlink!=0){
-            digitalWrite(LED_BUILTIN, LOW);
-         }
-      }
-      BlinkState=newBlink;
-   }
-   virtual void mdelay(int n){
-      int c;
-      for(c=n;c>0;c-=tDelay){
-         delay(tDelay);
-         if (BlinkSpeed>0){
-            BlinkTimer+=tDelay;
-         }
-         if (BlinkWhile>0){
-            if (BlinkTimer>BlinkSpeed*2){
-               BlinkTimer=0;
-            }
-            else if (BlinkTimer>BlinkSpeed){
-               this->setBlink(1);
-            }
-            else{
-               this->setBlink(0);
-            } 
-         }
-         //this->printf("BlinkWhile=%d BlinkSpeed=%d BlinkTimer=%d BlinkState=%d\n",BlinkWhile,BlinkSpeed,BlinkTimer,BlinkState);
-         if (BlinkWhile>1){
-            BlinkWhile-=tDelay;
-            if (BlinkWhile==1) BlinkWhile++;
-            if (BlinkWhile<=0){
-               BlinkWhile=0;
-               BlinkSpeed=0;
-               this->setBlink(0);
-            }
-         }
-         if (BlinkWhile>0){
-            
-         }
-      }
-   }
-   virtual void setup(int t){
-      curType=t;
-      if (this->curType&CON_SERIAL){
-         this->setup_SERIAL();
-      }
-   }
-   virtual void switchTo(int t){
-      if (this->curType&CON_SERIAL){
-         Serial.flush();
-         this->mdelay(100);
-        // Serial.end();
-      }
-      curType=t;
-      if (curType&CON_SERIAL){
-         this->setup_SERIAL();
-      }
-      if (curType&CON_LED){
-         this->setup_LED();
-      }
-      if (curType&CON_TCP){
-         this->setup_TCP();
-      }
-   }
-   virtual void printf(const char *fmt, ...){
-      int l;
-      char buffer[255];
-
-      l=strlen(fmt);
-      va_list ap;
-      va_start(ap, fmt);
-      ets_vsnprintf(buffer,255, fmt, ap);
-      va_end(ap);
-      if (curType&CON_SERIAL){ 
-         Serial.print(buffer);
-      }
-      if (this->curType&CON_TCP){ 
-         if (ConTcp.connected()){
-            ConTcp.print(buffer);
-         }
-      }
-   }
-   virtual void Blink(int n){
-      BlinkWhile=1;
-      BlinkSpeed=n;
-      if (n==0){
-         BlinkWhile=0;
-         this->setBlink(0);
-      }
-   }
-   virtual void Blink(int n,int pBlinkWhile){
-      BlinkWhile=pBlinkWhile;
-      BlinkSpeed=n;
-   }
-};
 
 #define WPS_BUTTON 0
 #define SW1_BUTTON 3
 #define SW1_RELAIS 2
 
 int WpsTimer=0;
-int SW1Timer=0;  
+int SW1Timer=0;
+int SW1State=0;
+
 int StateTimer=0;
 int LoopTimer=10;
 //char buffer[255];
@@ -203,8 +44,40 @@ int WiFiRunning=0;
 int WpsButtonConfigured=0;
 
 
+void handleActSwitchOn(){
+   con.printf("SW1 on\n");
+   con.setBlink(1);
+   digitalWrite(SW1_RELAIS, LOW);
+}
+
+int CurrentSwitchState(){
+   if (digitalRead(SW1_RELAIS) == LOW){
+      return(HIGH);
+   }
+   return(LOW);
+}
+
+void handleActSwitchOff(){
+   con.setBlink(0);
+   digitalWrite(SW1_RELAIS, HIGH);
+   //     if (SW1Timer>1000 && SW1Timer < 3000){
+   //        con.printf("SW1 down trigger\n");
+   //     }
+}
+
+void handleActSwitchToggle(){
+   if (CurrentSwitchState()==HIGH){
+      handleActSwitchOff();
+   }
+   else{
+      handleActSwitchOn();
+   }
+}
+
+
+
 void setup() {
- 
+  config_setup();
   pinMode(SW1_RELAIS,OUTPUT);
   digitalWrite(SW1_RELAIS, HIGH);
   
@@ -268,6 +141,24 @@ void Handle_index_html(){
    return;
 }
 
+void handleActLoadConfig(JsonObject *r){
+
+   con.mdelay(1500);
+   (*r)["syslog_server"]=Config.syslog_server;
+   (*r)["mq_server"]=Config.mq_server;
+}
+
+void handleActSaveConfig(ESP8266WebServer *cgi){
+   String syslog_server=(*cgi).arg("syslog_server");
+   syslog_server.toCharArray(Config.syslog_server,128);
+
+   String mq_server=(*cgi).arg("mq_server");
+   mq_server.toCharArray(Config.mq_server,128);
+   config_save();
+}
+
+
+
 void Handle_act(String uri){
   // String s("OK:");
   // String state=WebSrv.arg("state");
@@ -277,8 +168,49 @@ void Handle_act(String uri){
   String callback=WebSrv.arg("callback");
   DynamicJsonBuffer jsonBuffer;
   JsonObject& r = jsonBuffer.createObject();  
-  r["exitcode"]="OK";
+
+  String op=WebSrv.arg("op");
+  if (op=="on"){
+     handleActSwitchOn();
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else if (op=="off"){
+     handleActSwitchOff();
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else if (op=="toggle"){
+     handleActSwitchToggle();
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else if (op=="loadConfig"){
+     handleActLoadConfig(&r);
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else if (op=="saveConfig"){
+     handleActSaveConfig(&WebSrv);
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else if (op=="status"){
+     r["exitcode"]="0"; 
+     r["exitmsg"]="OK";
+  }
+  else{
+     r["exitcode"]="1"; 
+     String a;
+     a="unknown op '";
+     a+=op;
+     a+="'";
+     r["exitmsg"]=a;
+  }
+  String st;
+  st=CurrentSwitchState();
   r["type"]="answer";
+  r["state"]=st;
   r["time"]=millis();
   String s;
   r.prettyPrintTo(s);
@@ -294,12 +226,19 @@ void Handle_jquery_js(){
 
 void Handle_NotFound() {
   String path = WebSrv.uri();
-  int index = path.indexOf("/act");
+  int index = path.indexOf("/json");
   if (index >= 0) {
     Handle_act(path);
   }
   
 }
+
+
+
+
+
+
+
 
 
 void loop() {
@@ -335,18 +274,17 @@ void loop() {
      if (digitalRead(SW1_BUTTON) == HIGH){
         SW1Timer+=LoopTimer;
         if (SW1Timer>100){
-           con.printf("SW1 on\n");
-           con.setBlink(1);
-           digitalWrite(SW1_RELAIS, LOW);
+           if (SW1State!=1){
+              handleActSwitchOn();
+              SW1State=1;
+           }
         }
      }
      else{
-        con.setBlink(0);
-        digitalWrite(SW1_RELAIS, HIGH);
-        if (SW1Timer>1000 && SW1Timer < 3000){
-           con.printf("SW1 down trigger\n");
+        if (SW1State!=0){
+           handleActSwitchOff();
+           SW1State=0;
         }
-     
         SW1Timer=0;
      }
   }
