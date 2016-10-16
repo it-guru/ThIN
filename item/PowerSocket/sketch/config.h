@@ -6,6 +6,7 @@ typedef struct _Config {
    char syslog_server[80];
    char mq_server[80];
    char admin_password[10];
+   char hostname[20];
    int  vers2;
 } ConfigStruct;
 

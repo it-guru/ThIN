@@ -30,6 +30,8 @@ int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, size_t count, const char *f
 #define CON_NULL   0
 
 
+
+
 class Con
 {
    private:
@@ -53,6 +55,7 @@ class Con
    virtual void setup(int t);
    virtual void switchTo(int t);
    virtual void printf(const char *fmt, ...);
+   virtual void println(const char *);
    virtual void Blink(int n);
    virtual void Blink(int n,int pBlinkWhile);
 };

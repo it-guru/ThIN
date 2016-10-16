@@ -161,6 +161,12 @@ void Con::printf(const char *fmt, ...){
    }
 }
 
+void Con::println(const char *line){
+  this->printf("%s\n",line);
+}
+
+
+
 void Con::Blink(int n){
    BlinkWhile=1;
    BlinkSpeed=n;
