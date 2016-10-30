@@ -1,12 +1,8 @@
 <!DOCTYPE html>
-<!-- saved from url=(0036)http://www.w3schools.com/default.asp -->
 <html lang="en-US" style="height: 100%;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>ThIN:psock.fritz.box</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="shortcut icon" href="/img/ThIN-mini.gif" type="image/gif" />
-<script src="/js/spin.js"></script>
-<script src="/js/require.js"></script>
-<xlink rel="stylesheet" href="./w3.css">
+<script src="/js/spin.js"></script><script src="/js/require.js"></script>
 <style>
 html,body{
   font-family:Verdana,sans-serif;
@@ -221,7 +217,6 @@ table.formtable tr td{
 
 
 </head><body style="position: relative; min-height: 100%; top: 0px;">
-
 <div id='designhead' class="top">
    <img src="../img/ThIN-mini.gif" height=60><font size=+3> ThIN - Technologie</font>
    <!--
@@ -448,15 +443,15 @@ require(["jquery"],function($){
          App.endMenu();
       });
 
-      console.log("width=",$(window).width());
-      if ($(window).width()<640){
+      var h=$(window).height();
+      var w=$(window).width();
+      if (w<640){
          NaviClose();
       }
       else{
          NaviOpen();
       }
-      var h=$(window).height();
-      if (h<=640){
+      if (h<=640 || w<550){
          $('#designhead').hide();
       }
       else{

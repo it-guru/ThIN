@@ -48,14 +48,26 @@ void setup(){
    WiFi.onEvent([](WiFiEvent_t e){            // needed to dispatch Network
       PM.handleWiFiEvent(e);                  // Events
    }); 
-  
+
+   // Level 0 (very native Modules)
+
    #ifdef packlib_cfgEEPROM 
       PM.add("cfg",       new cfgEEPROM());
    #endif
 
    #ifdef packlib_Cons 
-      PM.add("console",   new Cons(CONS_SERIAL));  //needs to be always 1st one!
+      PM.add("console",   new Cons(packlib_Cons_InitialMode));
    #endif
+
+
+   // Level 1 (Modules which needed a very son init phase, f.e. device modules)
+
+   #ifdef packlib_GenDevCtrl
+      PM.add("gendevctrl",new GenDevCtrl());
+   #endif
+
+
+   // Level 3 (all outer modules);
 
    #ifdef packlib_Net
       PM.add("net",       new Net());
@@ -83,10 +95,6 @@ void setup(){
 
    #ifdef packlib_NTPCli
       PM.add("ntp",       new NTPCli());
-   #endif
-
-   #ifdef packlib_GenDevCtrl
-      PM.add("gendevctrl",new GenDevCtrl());
    #endif
 
    #ifdef packlib_fhem

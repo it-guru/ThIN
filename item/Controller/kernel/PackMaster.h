@@ -19,7 +19,7 @@ class Session
    String proto;
    String ipaddr;
    int8_t uid=-1;
-
+   int8_t authLevel=0;
 };
 
 // Command Handling

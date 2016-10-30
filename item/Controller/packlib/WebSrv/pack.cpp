@@ -82,6 +82,10 @@ bool WebSrv::json_WebSrvStatus(ESP8266WebServer *s,String &p){
 
   data["Hostname"]=String(Controller->hostname());
 
+  data["sessionUser"]=curWebSession->session.user;
+
+  data["sessionAuthLevel"]=curWebSession->session.authLevel;
+
 //  if (WiFiIsConnected){
      data["WiFi"]=String("connected");
      data["SSID"]=String(WiFi.SSID());
@@ -104,6 +108,47 @@ void WebSrv::onRequest(){
    String path = srv->uri();
    bool   isHandled=false;
    CONS->printf("WebSrv: req:'%s'\n",path.c_str());
+   String sessionid="";
+   if (srv->hasHeader("Cookie")){   
+      int p;
+      String cookie = srv->header("Cookie");
+      CONS->printf("Found cookie: '%s'\n",cookie.c_str());
+      if ((p=cookie.indexOf("THINSESSIONID=")) != -1) { 
+         sessionid=cookie.substring(p);
+      }
+   }
+   if (sessionid!=""){
+      CONS->printf("Searching for  THINSESSIONID =%s in WebSessions\n",sessionid.c_str());
+   }
+
+   WebSession *wsession=pWebSessions;
+   while(wsession->pNext!=NULL){
+      wsession=wsession->pNext;
+      if (wsession->key==sessionid){
+         break;
+      }
+   }
+   CONS->printf("wsession=%x\n",wsession);
+   CONS->printf("pWebSessions=%x\n",pWebSessions);
+   if (sessionid!="" && (wsession==NULL || wsession==pWebSessions)){
+      CONS->printf("invalid session key '%s' found\n",sessionid.c_str());
+      String header = "HTTP/1.1 302 OK\r\n";
+      header+="Location: "+path+"\r\n";
+      header+="Cache-Control: no-cache\r\n";
+      header+="Set-Cookie: THINSESSIONID=0;path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n";
+      header+="Content-type: text/html\r\n";
+      header+="\r\n";
+      srv->sendContent(header);
+      return;
+   }
+   if (wsession==NULL){
+      curWebSession=pWebSessions;
+   }
+   else{
+      curWebSession=wsession;
+      curWebSession->lastUseTime=Controller->Uptime.getSeconds();
+   }
+
    isHandled=ns->handle(srv,path);
    if (!isHandled){
       String message = "File Not Found\n\n";
@@ -122,19 +167,98 @@ void WebSrv::onRequest(){
 }
 
 bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
+   String header = "HTTP/1.1 200 OK\r\n";
+   //header+="Location: /js/sys/logon\r\n";
+   header+="Cache-Control: no-cache\r\n";
+
    String d="";
-   int c;
-  
-   d+="<html>";
-   d+="<body>";
-   d+="<h1>Logon</h1>";
-   d+="</body>";
-   d+="</html>";
-   srv->send(200,"text/html",d);
+
+   String username=srv->arg("username");
+   String password=srv->arg("password");
+
+   //for (uint8_t i=0; i<srv->args(); i++){
+   //  CONS->printf("arg='%s' val='%s'\n",srv->argName(i).c_str(),srv->arg(i).c_str());
+   //}
+
+   int8_t uid=0;
+   userEntry *u=Controller->cfg->getUser(uid);
+   WebSession *wsession=NULL;
+   String  sessionkey("");
+   while(u!=NULL){
+      if (username==u->username){
+         if (password==u->password){
+            wsession=pWebSessions;
+            WebSession *pPre;
+            while(wsession->pNext!=NULL){
+               pPre=wsession;
+               wsession=wsession->pNext;
+               if (wsession!=NULL){
+                  CONS->printf("fifi check '%s' t=%ld\n",wsession->key.c_str(),wsession->lastUseTime);
+                  if (wsession->lastUseTime<Controller->Uptime.getSeconds()-60){
+                     CONS->printf("cleanup session\n");
+                     WebSession *pNext=wsession->pNext;
+                     delete(wsession);
+                     pPre->pNext=pNext;
+                     wsession=pPre;
+                  }
+               }
+            }
+            wsession->pNext=new WebSession();
+            wsession=wsession->pNext;
+            sessionkey=username;
+            sessionkey+="+";
+            sessionkey+=srv->client().remoteIP().toString();
+
+            wsession->session.user=username;
+            wsession->session.proto="web";
+            wsession->session.uid=uid;
+            wsession->key=sessionkey;
+            wsession->lastUseTime=Controller->Uptime.getSeconds();
+            wsession->session.authLevel=u->authLevel;
+            wsession->session.ipaddr=srv->client().remoteIP().toString();
+            header+="Set-Cookie: THINSESSIONID="+sessionkey+";Path=/\r\n";
+         }
+         break;
+      }
+      u=Controller->cfg->getUser(++uid);
+   }
+
+   if (srv->method() == HTTP_POST){  // logon via ajax
+      header+="Content-type: application/json\r\n";
+      header+="\r\n";
+      srv->sendContent(header);
+
+      DynamicJsonBuffer json;
+      JsonObject& root = json.createObject();      
+      if (wsession!=NULL){
+         root["exitcode"]=0;
+         root["exitmsg"]="Logon OK";
+      }
+      else{
+         root["exitcode"]=1;
+         root["exitmsg"]="ERROR: invalid user or password";
+      }
+
+      String dstr;
+      root.prettyPrintTo(dstr);
+      srv->sendContent(dstr); 
+   }
+   else{
+      header+="Content-type: text/html\r\n";
+      header+="\r\n";
+      srv->sendContent(header);
+      d+="<html>";
+      d+="<body>";
+      d+="<h1>Logon</h1>";
+      d+="</body>";
+      d+="</html>";
+      srv->sendContent(d);
+   }
+   return(true);
 }
 
 
-bool WebSrv::logoutHandler(ESP8266WebServer *s,String &p){
+bool WebSrv::logoffHandler(ESP8266WebServer *s,String &p){
    String d="";
    int c;
   
@@ -313,31 +437,6 @@ bool WebSrv::sendActionScript(ESP8266WebServer *s,String &p){
 
 
 
-bool WebSrv::doFwdRequest(String url){
-   //WiFiClient client = srv->client();
-   HTTPClient http;
-   CONS->printf("Start request to %s\n",url.c_str());
-   http.begin(url);
-   int httpCode = http.GET();
-   if (httpCode > 0) {
-      if (httpCode == HTTP_CODE_OK){
-         String payload = http.getString();
-         CONS->printf("payload length=%d\n",payload.length());
-         String content="text/html";
-         if (url.endsWith(".js")){
-            content="text/javascript";
-         }
-         srv->send(200,content,payload);
-         return(true);
-      }
-      else{
-         CONS->printf("result code=%d\n",httpCode);
-      }
-   }
-   return(false);
-}
-
-
 void WebSrv::setup(){
    if (wss!=NULL){
       wss->onEvent([&](uint8_t num,WStype_t type,uint8_t * payload,size_t sz){
@@ -380,8 +479,6 @@ void WebSrv::setup(){
       });
    }
    if (srv!=NULL){
-      this->setTestBaseURL("http://10.123.100.20:8080/ESP8266");
-      this->setTestNS("/js/act/handler/MainOverview.js");
       this->regNS("/info.html",[&](ESP8266WebServer *s,String &p)->bool{
          this->pageInfo();
          return(true);
@@ -402,11 +499,11 @@ void WebSrv::setup(){
       this->regNS("/js/MenuTab.js",[&](ESP8266WebServer *s,String &p)->bool{
          return(this->sendMenuScript(s,p));
       });
-      this->regNS("/logon",[&](ESP8266WebServer *s,String &p)->bool{
+      this->regNS("/js/sys/logon",[&](ESP8266WebServer *s,String &p)->bool{
          return(this->logonHandler(s,p));
       });
-      this->regNS("/logout",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->logoutHandler(s,p));
+      this->regNS("/js/sys/logoff",[&](ESP8266WebServer *s,String &p)->bool{
+         return(this->logoffHandler(s,p));
       });
       this->regNS("/js/act/handler/",[&](ESP8266WebServer *s,String &p)->bool{
          return(this->sendActionScript(s,p));
@@ -415,9 +512,11 @@ void WebSrv::setup(){
       this->regNS("/",[&](ESP8266WebServer *s,String &p)->bool{
          return(this->redirectToIndex(s,p));
       });
-      this->setTestNS("/html/index1.html");
 
       srv->onNotFound([&](){ this->onRequest(); });
+      const char * headerkeys[] = {"User-Agent","Cookie"} ;
+      size_t headerkeyssize = sizeof(headerkeys)/sizeof(char*);
+      srv->collectHeaders(headerkeys, headerkeyssize );
    }
 }
 

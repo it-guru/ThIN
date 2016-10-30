@@ -1,15 +1,17 @@
 #include "./pack.h"
 
 Cons::Cons(int t){
-//   pinMode(LED_BUILTIN, OUTPUT); 
-//   digitalWrite(LED_BUILTIN, LOW);
-//   delay(3000);
-//   digitalWrite(LED_BUILTIN, HIGH); 
-//   delay(2000);
-//   delay(10);
-//   delay(100);
-//   Serial.print("\n");
-//   Serial.print("Controller running ...\n");
+   if (t&CONS_SERIAL_AUTODISABLE){
+      if (digitalRead(0)){  // disable SERIAL_CON if flashmode GPIO0=0
+         t=t&(~CONS_SERIAL);
+      }
+      else{
+         t=t|CONS_SERIAL;
+      }
+   }
+   if ((t&CONS_LED) && (t&CONS_SERIAL)){
+      t=t&(~CONS_LED);  // disable nativ LED Mode, if Serial Cons is active
+   }
    set(t);
 }
 
@@ -29,6 +31,7 @@ void Cons::set(int newMode){
    if (newMode&CONS_SERIAL){
       delay(100);
       Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+      Serial.setDebugOutput(true);
      // This serial config allows to use GPIO3 (RX) as input as descripted at
      //http://www.forward.com.au/pfod/ESP8266/GPIOpins/ESP8266_01_pin_magic.html
       Serial.print("\n");

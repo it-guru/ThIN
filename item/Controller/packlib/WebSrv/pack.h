@@ -39,7 +39,14 @@ typedef struct _modTreeRec{
    long modRecIndex=-1;
 } modTreeRec;
 
+struct _WebSession;
 
+typedef struct _WebSession{
+   struct _WebSession *pNext=NULL; 
+   Session            session;
+   String             key;
+   unsigned long      lastUseTime;
+} WebSession;
 
 
 
@@ -48,6 +55,9 @@ class WebSrv : public Pack {
    DynHashTable<modObj *>  modReg;
    modTreeRec              modTree;
    reqNode *ns;
+   WebSession *pWebSessions;
+   WebSession *curWebSession;
+
    void addTreeLevel(String &js,int mLevel,modTreeRec *b);
 
    public:
@@ -57,6 +67,11 @@ class WebSrv : public Pack {
       srv=new ESP8266WebServer(80);
       wss=new WebSocketsServer(81);
       ns=new reqNode();
+      pWebSessions=new WebSession();
+      pWebSessions->session.user="anonymous";
+      pWebSessions->session.proto="web";
+      pWebSessions->session.ipaddr="0.0.0.0";
+      pWebSessions->key="";
    };
    virtual void setup();
    virtual void loop();
@@ -79,27 +94,12 @@ class WebSrv : public Pack {
    bool sendActionScript(ESP8266WebServer *s,String &p);
    bool sendMenuScript(ESP8266WebServer *s,String &p);
    bool logonHandler(ESP8266WebServer *s,String &p);
-   bool logoutHandler(ESP8266WebServer *s,String &p);
+   bool logoffHandler(ESP8266WebServer *s,String &p);
 
 
    protected:
-   String  TestBaseURL;
 
    public:
-   void setTestBaseURL(String p){
-      TestBaseURL=p;
-   };
-   void setTestNS(char *p){
-      String fwd;
-      fwd=TestBaseURL;
-      fwd+=p;
-      CONS->printf("setTestNS fwd=%s\n",fwd.c_str());
-      this->regNS(p,[&,fwd](ESP8266WebServer *s,String &p)->bool{
-         CONS->printf("in regNS fwd=%s\n",fwd.c_str());
-         return(this->doFwdRequest(fwd));
-      });
-   };
-   
 };
 
 #endif

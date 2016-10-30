@@ -7,10 +7,11 @@
 
 #include "../../config.h"
 
-#define CONS_LED    1
-#define CONS_SERIAL 2
-#define CONS_TCP    4
-#define CONS_NULL   0
+#define CONS_LED                1
+#define CONS_SERIAL             2
+#define CONS_TCP                4
+#define CONS_SERIAL_AUTODISABLE 5  // use CONS_SERIAL in non flash mode GPIO0=0
+#define CONS_NULL               0
 
 int ets_vsprintf(char *str, const char *format, va_list arg);
 int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, size_t count, const char *format, va_list arg);
