@@ -11,8 +11,10 @@
 #include <functional>
 #include "../../include/DynHashTable.hpp"
 
+#define SESSIONVARNAME "THINSESSIONID"
 
-typedef std::function<bool(ESP8266WebServer *s,String &p)> reqHandler;
+typedef std::function<bool(Session &session,ESP8266WebServer *srv,String &p)> 
+reqHandler;
 
 typedef struct _reqHandlerRec{
    reqHandler f;
@@ -26,17 +28,19 @@ class reqNode{
 
    public:
    void on(char *p,reqHandler f);
-   bool handle(ESP8266WebServer *s,String &p);
+   bool handle(Session &session,ESP8266WebServer *s,String &p);
 };
 
 typedef struct _modObj{
    reqHandler action;
    const char**  mp;
+   int8_t        minAuthLevel;
 } modObj;
 
 typedef struct _modTreeRec{
    DynHashTable<struct _modTreeRec *>     rec;
    long modRecIndex=-1;
+   int8_t        minAuthLevel;
 } modTreeRec;
 
 struct _WebSession;
@@ -80,21 +84,23 @@ class WebSrv : public Pack {
 
 
    void pageInfo();
-   bool redirectToIndex(ESP8266WebServer *s,String &p);
-   bool json_WebSrvStatus(ESP8266WebServer *s,String &p);
+   bool redirectToIndex(Session &session,ESP8266WebServer *s,String &p);
+   bool json_WebSrvStatus(Session &session,ESP8266WebServer *s,String &p);
+   String getCurrentSessionID();
 
 
    void onRequest();
-   bool onRestRequest(ESP8266WebServer *s,String &p);
+   bool onRestRequest(Session &session,ESP8266WebServer *s,String &p);
    void progCont();
    void regNS(char *p,reqHandler f);
-   void regMod(char *p,reqHandler action=NULL,const char** mp=NULL );
+   void regMod(char *p,reqHandler action=NULL,const char** mp=NULL ,
+               int8_t minAuthLevel=0);
    bool doFwdRequest(String url);   
 
-   bool sendActionScript(ESP8266WebServer *s,String &p);
-   bool sendMenuScript(ESP8266WebServer *s,String &p);
-   bool logonHandler(ESP8266WebServer *s,String &p);
-   bool logoffHandler(ESP8266WebServer *s,String &p);
+   bool sendActionScript(Session &session,ESP8266WebServer *s,String &p);
+   bool sendMenuScript(Session &session,ESP8266WebServer *s,String &p);
+   bool logonHandler(Session &session,ESP8266WebServer *s,String &p);
+   bool logoffHandler(Session &session,ESP8266WebServer *s,String &p);
 
 
    protected:

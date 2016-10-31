@@ -53,7 +53,7 @@ class Interval{
    };
 };
 
-class UptimeController {
+class xUptimeController {
    public:
      void loop(){
         unsigned long now=millis();
@@ -63,6 +63,7 @@ class UptimeController {
         }
      };
      unsigned long getSeconds(){
+        unsigned long now=millis();
         return(seconds);
      };
 
@@ -70,5 +71,39 @@ class UptimeController {
      unsigned long seconds=0;
      unsigned long lastTick=0;
 };
+
+
+class UptimeController {
+   public:
+     void loop(){
+        unsigned long now=millis();
+        if (now<lastNow){  // rollover
+           lastNow=0;
+           lastNow=~lastNow; // get max of UL
+           lastBase+=(lastNow)/1000UL;
+        }
+        lastNow=now;
+     };
+     unsigned long getSeconds(){
+        unsigned long now=millis();
+        unsigned long seconds=(now)/1000UL;
+        return(seconds+lastBase);
+     };
+
+   private:
+     unsigned long lastBase=0;
+     unsigned long lastNow=0;
+};
+
+
+
+
+
+
+
+
+
+
+
 
 #endif

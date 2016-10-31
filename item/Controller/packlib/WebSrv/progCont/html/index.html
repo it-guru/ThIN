@@ -180,6 +180,10 @@ fieldset p{
   font-size:0.8rem;
 }
 
+#msg{
+  font-size:0.9rem;
+}
+
 .work-div
 {
   position: absolute;
@@ -209,6 +213,11 @@ table.formtable tr td{
    cursor:pointer;
 }
 
+.logonoff{
+   cursor:pointer;
+   display:none;
+}
+
 </style>
 
 
@@ -231,6 +240,12 @@ table.formtable tr td{
   <div class="topnavlinks">
   ThIN - Technologie <span id=hostname></span>
   &nbsp; <!-- hier kann noch was rein -->
+  <span class=logonoff id=logonBtn>
+  &bull; Logon &bull;
+  </span>
+  <span class=logonoff id=logoffBtn>
+  &bull; Logoff &bull;
+  </span>
   </div>
 </div>
 
@@ -239,6 +254,7 @@ table.formtable tr td{
 <div style="margin:15px" id=menu></div>
 
 <div style='position:absolute;bottom:2px;width:inherit'>
+<div id=msg style='margin-left:10px;margin-right:10px'></div>
 <div id=mon style='border-width:1px;border-style:solid;border-color:gray;margin:10px;padding:5px'>Connecting ...</div>
 </div>
 
@@ -335,7 +351,7 @@ function SpinnerOff(){
 SpinnerOn();
 requirejs.config({
    baseUrl: '/js',
-   waitSeconds: 30,
+   waitSeconds: 60,
    paths: {
       jquery: 'jquery.min',
       action: '/js/act/handler'
@@ -379,14 +395,99 @@ require(["jquery"],function($){
       }
    }
    App={
+      session:{
+         authLevel:0,
+         user:"anonymous",
+      },
       startMenu:function(){
-         console.log("startMenu");
+      //   console.log("startMenu");
+      },
+      showMsg:function(txt){
+         var htmltxt=txt;
+         $('#msg').html(htmltxt);
+      },
+      isLoggedOn:function(){
+         $('#logonBtn').hide();
+         $('#logoffBtn').show();
+         $('#logoffBtn').click(function(){
+            SpinnerOn();
+            console.log("logoff clicked");
+            $.ajax({
+              type: "POST",
+              url: '/js/sys/logoff',
+              data: "",
+              success: function(data,textStatus,jqXHR){
+                 if (data.exitcode>0){
+                    alert("error "+data.exitmsg);
+                 }
+                 else{
+                    console.log("logon OK",data,textStatus,jqXHR);
+                    document.location.href="../../html/index.html";
+                 }
+                 SpinnerOff();
+              },
+              error: function(xreq,textStatus,errorThrown){
+                 console.log("logon ERROR textStatus:",
+                             textStatus,"error:",errorThrown," xreq",xreq);
+                 SpinnerOff();
+              },
+              dataType: "json"
+            });
+         });
+
+      },
+      isLoggedOut:function(){
+         $('#logonBtn').show();
+         $('#logoffBtn').hide();
+         $('#logonBtn').click(function(){
+            var d="<div class=work-div style='height:130px'>";
+            d+="<form id=formLogon>";
+            d+="<table width=100% border=1 cellspacing=5 height=100>";
+            d+="<tr height=1%><td colspan=2>";
+            d+="<font size=+1><b>Logon:</b></font>";
+            d+="</td></tr>";
+            d+="</tr><tr height=1%>";
+            d+="<td>Username:</td>";
+            d+="<td><input type=text name=username size=10></td>";
+            d+="</tr><tr height=1%>";
+            d+="<td>Password:</td>";
+            d+="<td><input type=password name=password size=10></td>";
+            d+="</tr><tr><td colspan=3>";
+            d+="<input id=doLogon type=button value=\"Logon\">";
+            d+="</td></tr></table>";
+            d+="</form></div>";
+            $("#main").html(d);
+            $('#doLogon').click(function(){
+               var str=$("#formLogon").serialize();
+               SpinnerOn();
+               $.ajax({
+                 type: "POST",
+                 url: '/js/sys/logon',
+                 data: str,
+                 success: function(data,textStatus,jqXHR){
+                    if (data.exitcode>0){
+                       alert("error "+data.exitmsg);
+                    }
+                    else{
+                       console.log("logon OK",data,textStatus,jqXHR);
+                       document.location.href="../../html/index.html";
+                    }
+                    SpinnerOff();
+                 },
+                 error: function(xreq,textStatus,errorThrown){
+                    console.log("logon ERROR textStatus:",
+                                textStatus,"error:",errorThrown," xreq",xreq);
+                    SpinnerOff();
+                 },
+                 dataType: "json"
+               });
+
+            });
+         });
       },
       endMenu:function(){
-         console.log("endMenu");
          $('.navlink').click(function(e){
             var id=$(this).attr('id');
-            console.log("click on "+id);
             startSubApp(id);
             return(false);
          });
@@ -413,7 +514,7 @@ require(["jquery"],function($){
    App.postSystemEvent=function(ev){
       App.ws.send(ev);
    };
-   console.log("ws=",App.ws);
+   //console.log("ws=",App.ws);
    function NaviOpen() {
      if ($(window).width()>640){
         $("#main").css({marginLeft:"230px"});
@@ -481,6 +582,28 @@ require(["jquery"],function($){
        if (data.Hostname!=undefined){
           $('#hostname').html(" - Hostname:"+data.Hostname);
        }
+       if (data.sessionAuthLevel!=undefined){
+          if (App.session.authLevel>0 && data.sessionAuthLevel==0){
+             App.showMsg("Note: doing auto logoff");
+             App.isLoggedOut();
+             setTimeout(function(){
+                App.showMsg("");
+             },2000);
+          }
+          var authstatechanged=false;
+          if (App.session.authLevel!=data.sessionAuthLevel){
+             authstatechanged=true;
+             App.session.authLevel=data.sessionAuthLevel;
+          }
+          if (App.session.user!=data.sessionUser){
+             authstatechanged=true;
+             App.session.user=data.sessionUser;
+          }
+          if (authstatechanged){
+             doControlNavigation();
+             $("#main").html("");
+          }
+       }
 
        $('#mon').html(d);
    }
@@ -496,26 +619,24 @@ require(["jquery"],function($){
            if (data && data.exitcode=="0"){
               updateSystemStatus(data.data);
            }
+           setTimeout(refreshStatus, 2000);
+        },
+        error: function(xreq,textStatus,errorThrown){
+           console.log("logon ERROR textStatus:",
+                       textStatus,"error:",errorThrown," xreq",xreq);
+           setTimeout(refreshStatus, 100);
         },
         jsonp: "callback"
       });
-/*
-
-        var items = [];
-        $.each( data, function( key, val ) {
-          items.push( "<li id='" + key + "'>" + val + "</li>" );
-        });
-       
-        $( "<ul/>", {
-          "class": "my-new-list",
-          html: items.join( "" )
-        }).appendTo( "body" );
-      });
-*/
    };
 
    $(window).resize(doControlNavigation);
-
+   if (document.cookie.indexOf("THINSESSIONID") >= 0) {
+      App.isLoggedOn();
+   }
+   else{
+      App.isLoggedOut();
+   }
    $(window).ready(function(){
       doControlNavigation();
 
@@ -537,7 +658,7 @@ require(["jquery"],function($){
             SpinnerOff();
          });
       }
-      setInterval(refreshStatus,3000);
+      setTimeout(refreshStatus, 10);
    });
 });
 

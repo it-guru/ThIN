@@ -78,12 +78,14 @@ void KeepAlive::setup(){
    #ifdef packlib_WebSrv
    WebSrv *w=(WebSrv *) Controller->findPack("websrv");
    if (w!=NULL){
-      w->regNS("/KeepAlive.html",[&](ESP8266WebServer *s,String &p)->bool{
+      w->regNS("/KeepAlive.html",[&]
+               (Session &session,ESP8266WebServer *s,String &p)->bool{
          this->keepAliveMessageWeb(s,p);
          return(true);
       });
       const char *m[] = {"System","KeepAlive", NULL };
-      w->regMod("SystemKeepAlive",[&](ESP8266WebServer *s,String &p)->bool{
+      w->regMod("SystemKeepAlive",[&]
+                (Session &session,ESP8266WebServer *s,String &p)->bool{
          s->send_P(200,PSTR("text/javascript"),KeepAlive_ModActionJavaScript); 
          return(true);
       },m);

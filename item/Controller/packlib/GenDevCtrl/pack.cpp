@@ -97,10 +97,11 @@ void GenDevCtrl::setup(){
    WebSrv *w=(WebSrv *) Controller->findPack("websrv");
    if (w!=NULL){
       const char *m[] = {"Main","Overview", NULL };
-      w->regMod("MainOverview",[&](ESP8266WebServer *s,String &p)->bool{
+      w->regMod("MainOverview",[&]
+                (Session &session,ESP8266WebServer *s,String &p)->bool{
          s->send_P(200,PSTR("text/javascript"),GenDevCtrl_ModActionJavaScript);
          return(true);
-      },m);
+      },m,50);
    }
    #endif
 

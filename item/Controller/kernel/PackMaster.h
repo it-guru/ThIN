@@ -262,6 +262,10 @@ class PackStdNet : public Pack{
 };
 
 
+String md5sum(String text);
+String byte2hex(byte Zahl);
+
+
 
 #define CONS this->Controller->Console()
 

@@ -19,7 +19,7 @@ find ${CDIR} -name \*.js -o -name \*.html -o -name \*.gif -o -name \*.svg | whil
    D=$(echo $F | tr '[a-z]' '[A-Z'] | sed -e 's/^\///' | sed -e 's/[-\/\.]/_/g')
    echo "f=$f  F=$F D=$D"
    echo "this->regNS(\"$F\"," >> ${CDIR}.cpp
-   echo "            [&](ESP8266WebServer *s,String &p)->bool{" >>${CDIR}.cpp
+   echo "            [&](Session &session,ESP8266WebServer *s,String &p)->bool{" >>${CDIR}.cpp
    xxd -i  $f  > ${CDIR}.tmp
    sed -i -e "s/unsigned int .*len =/unsigned int ${D}_LENGTH =/" \
        ${CDIR}.tmp

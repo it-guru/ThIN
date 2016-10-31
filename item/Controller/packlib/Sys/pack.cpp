@@ -35,7 +35,8 @@ void Sys::setup(){
    WebSrv *w=(WebSrv *) Controller->findPack("websrv");
    if (w!=NULL){
       const char *m[] = {"System","Status", NULL };
-      w->regMod("SysStatus",[&](ESP8266WebServer *s,String &p)->bool{
+      w->regMod("SysStatus",[&]
+                (Session &session,ESP8266WebServer *s,String &p)->bool{
          s->send_P(200,PSTR("text/javascript"),Sys_ModActionJavaScript);
          return(true);
       },m);

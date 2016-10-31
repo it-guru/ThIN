@@ -40,7 +40,7 @@ void WebSrv::pageInfo(){
 }
 
 
-bool WebSrv::redirectToIndex(ESP8266WebServer *s,String &p){
+bool WebSrv::redirectToIndex(Session &session,ESP8266WebServer *s,String &p){
    String d="";
    int c;
   
@@ -56,7 +56,7 @@ bool WebSrv::redirectToIndex(ESP8266WebServer *s,String &p){
 }
 
 
-bool WebSrv::json_WebSrvStatus(ESP8266WebServer *s,String &p){
+bool WebSrv::json_WebSrvStatus(Session &session,ESP8266WebServer *s,String &p){
   DynamicJsonBuffer jsonBuffer;
   JsonObject& r = jsonBuffer.createObject();
   r["exitcode"]="0";
@@ -66,15 +66,17 @@ bool WebSrv::json_WebSrvStatus(ESP8266WebServer *s,String &p){
 
   JsonObject& data = r.createNestedObject("data");
 
-  data["SketchSize"]=String(ESP.getSketchSize(),DEC);
-
-  data["FreeSpace"]=String(ESP.getFreeSketchSpace(),DEC);
-
-  data["ChipId"]=String(ESP.getChipId());
-
-  data["FlashChipId"]=String(ESP.getFlashChipId());
-
-  data["FreeHeap"]=String(ESP.getFreeHeap());
+  if (session.authLevel>=100){
+     data["SketchSize"]=String(ESP.getSketchSize(),DEC);
+    
+     data["FreeSpace"]=String(ESP.getFreeSketchSpace(),DEC);
+    
+     data["ChipId"]=String(ESP.getChipId());
+    
+     data["FlashChipId"]=String(ESP.getFlashChipId());
+    
+     data["FreeHeap"]=String(ESP.getFreeHeap());
+  }
 
   data["UpTime"]=String(Controller->Uptime.getSeconds(),DEC);
 
@@ -101,25 +103,32 @@ bool WebSrv::json_WebSrvStatus(ESP8266WebServer *s,String &p){
   return(true);
 }
 
-
+String WebSrv::getCurrentSessionID(){
+   String sessionid="";
+   if (srv->hasHeader("Cookie")){   
+      int p;
+      String cookie = srv->header("Cookie");
+      //CONS->printf("Found cookie: '%s'\n",cookie.c_str());
+      String sessionvarname(SESSIONVARNAME);
+      sessionvarname+="=";
+      if ((p=cookie.indexOf(sessionvarname)) != -1) { 
+         sessionid=cookie.substring(p);
+      }
+   }
+   return(sessionid);
+}
 
 
 void WebSrv::onRequest(){
    String path = srv->uri();
    bool   isHandled=false;
-   CONS->printf("WebSrv: req:'%s'\n",path.c_str());
-   String sessionid="";
-   if (srv->hasHeader("Cookie")){   
-      int p;
-      String cookie = srv->header("Cookie");
-      CONS->printf("Found cookie: '%s'\n",cookie.c_str());
-      if ((p=cookie.indexOf("THINSESSIONID=")) != -1) { 
-         sessionid=cookie.substring(p);
-      }
-   }
-   if (sessionid!=""){
-      CONS->printf("Searching for  THINSESSIONID =%s in WebSessions\n",sessionid.c_str());
-   }
+   CONS->printf("WebSrv: request: '%s'\n",path.c_str());
+
+   String sessionid=this->getCurrentSessionID();
+   //if (sessionid!=""){
+   //   CONS->printf("Searching for  %s=%s in WebSessions\n",
+   //                SESSIONVARNAME,sessionid.c_str());
+   //}
 
    WebSession *wsession=pWebSessions;
    while(wsession->pNext!=NULL){
@@ -128,14 +137,14 @@ void WebSrv::onRequest(){
          break;
       }
    }
-   CONS->printf("wsession=%x\n",wsession);
-   CONS->printf("pWebSessions=%x\n",pWebSessions);
    if (sessionid!="" && (wsession==NULL || wsession==pWebSessions)){
       CONS->printf("invalid session key '%s' found\n",sessionid.c_str());
       String header = "HTTP/1.1 302 OK\r\n";
       header+="Location: "+path+"\r\n";
       header+="Cache-Control: no-cache\r\n";
-      header+="Set-Cookie: THINSESSIONID=0;path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n";
+      header+="Set-Cookie: ";
+      header+=SESSIONVARNAME;
+      header+="=;path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n";
       header+="Content-type: text/html\r\n";
       header+="\r\n";
       srv->sendContent(header);
@@ -149,7 +158,7 @@ void WebSrv::onRequest(){
       curWebSession->lastUseTime=Controller->Uptime.getSeconds();
    }
 
-   isHandled=ns->handle(srv,path);
+   isHandled=ns->handle(curWebSession->session,srv,path);
    if (!isHandled){
       String message = "File Not Found\n\n";
       message += "URI: ";
@@ -166,7 +175,7 @@ void WebSrv::onRequest(){
    }
 }
 
-bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
+bool WebSrv::logonHandler(Session &session,ESP8266WebServer *s,String &p){
    String header = "HTTP/1.1 200 OK\r\n";
    //header+="Location: /js/sys/logon\r\n";
    header+="Cache-Control: no-cache\r\n";
@@ -175,11 +184,6 @@ bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
 
    String username=srv->arg("username");
    String password=srv->arg("password");
-
-   //for (uint8_t i=0; i<srv->args(); i++){
-   //  CONS->printf("arg='%s' val='%s'\n",srv->argName(i).c_str(),srv->arg(i).c_str());
-   //}
-
    int8_t uid=0;
    userEntry *u=Controller->cfg->getUser(uid);
    WebSession *wsession=NULL;
@@ -193,9 +197,7 @@ bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
                pPre=wsession;
                wsession=wsession->pNext;
                if (wsession!=NULL){
-                  CONS->printf("fifi check '%s' t=%ld\n",wsession->key.c_str(),wsession->lastUseTime);
                   if (wsession->lastUseTime<Controller->Uptime.getSeconds()-60){
-                     CONS->printf("cleanup session\n");
                      WebSession *pNext=wsession->pNext;
                      delete(wsession);
                      pPre->pNext=pNext;
@@ -208,6 +210,9 @@ bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
             sessionkey=username;
             sessionkey+="+";
             sessionkey+=srv->client().remoteIP().toString();
+            sessionkey+="+";
+            sessionkey+=String(millis(),DEC);
+            sessionkey=md5sum(sessionkey);
 
             wsession->session.user=username;
             wsession->session.proto="web";
@@ -216,7 +221,9 @@ bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
             wsession->lastUseTime=Controller->Uptime.getSeconds();
             wsession->session.authLevel=u->authLevel;
             wsession->session.ipaddr=srv->client().remoteIP().toString();
-            header+="Set-Cookie: THINSESSIONID="+sessionkey+";Path=/\r\n";
+            header+="Set-Cookie: ";
+            header+=SESSIONVARNAME;
+            header+="="+sessionkey+";Path=/\r\n";
          }
          break;
       }
@@ -258,20 +265,65 @@ bool WebSrv::logonHandler(ESP8266WebServer *s,String &p){
 }
 
 
-bool WebSrv::logoffHandler(ESP8266WebServer *s,String &p){
+bool WebSrv::logoffHandler(Session &session,ESP8266WebServer *s,String &p){
+   String header = "HTTP/1.1 200 OK\r\n";
+   header+="Cache-Control: no-cache\r\n";
+
    String d="";
-   int c;
-  
-   d+="<html>";
-   d+="<body>";
-   d+="<h1>Logon</h1>";
-   d+="</body>";
-   d+="</html>";
-   srv->send(200,"text/html",d);
+   String sessionid=this->getCurrentSessionID();
+
+   if (sessionid!=""){
+      header+="Set-Cookie: ";
+      header+=SESSIONVARNAME;
+      header+="=;path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n";
+      WebSession *wsession=pWebSessions;
+      WebSession *pPre;
+      while(wsession->pNext!=NULL){
+         pPre=wsession;
+         wsession=wsession->pNext;
+         if (wsession!=NULL){
+            if (wsession->key==sessionid){
+               CONS->printf("logout sesion '%s'\n",sessionid.c_str());
+               WebSession *pNext=wsession->pNext;
+               delete(wsession);
+               pPre->pNext=pNext;
+               wsession=pPre;
+            }
+         }
+      }
+   }
+
+   if (srv->method() == HTTP_POST){  // logoff via ajax
+      header+="Content-type: application/json\r\n";
+      header+="\r\n";
+      srv->sendContent(header);
+
+      DynamicJsonBuffer json;
+      JsonObject& root = json.createObject();      
+      root["exitcode"]=0;
+      root["exitmsg"]="Logoff OK";
+
+      String dstr;
+      root.prettyPrintTo(dstr);
+      srv->sendContent(dstr); 
+   }
+   else{
+      header+="Content-type: text/html\r\n";
+      header+="\r\n";
+      srv->sendContent(header);
+      d+="<html>";
+      d+="<body>";
+      d+="<h1>Logoff</h1>";
+      d+="</body>";
+      d+="</html>";
+      srv->sendContent(d);
+   }
+   return(true);
+
 }
 
 
-bool WebSrv::onRestRequest(ESP8266WebServer *s,String &p){
+bool WebSrv::onRestRequest(Session &session,ESP8266WebServer *s,String &p){
    CONS->printf("WebSrv: got rest request:'%s'\n",p.c_str());
    String line=p;
    if (line.startsWith("set/")){
@@ -343,12 +395,14 @@ void WebSrv::regNS(char *p,reqHandler f)
    ns->on(p,f);
 }
 
-void WebSrv::regMod(char *p,reqHandler action,const char** mp)
+void WebSrv::regMod(char *p,reqHandler action,const char** mp,
+                    int8_t minAuthLevel)
 {
    modObj *newModuleHandler;
    newModuleHandler=new modObj();
    newModuleHandler->action=action;
    newModuleHandler->mp=mp;
+   newModuleHandler->minAuthLevel=minAuthLevel;
 
    long modPos=modReg.set(p,newModuleHandler);
    if (newModuleHandler->mp!=NULL){
@@ -357,6 +411,7 @@ void WebSrv::regMod(char *p,reqHandler action,const char** mp)
          modTreeRec *pp=base->rec.get(*(newModuleHandler->mp+t));
          if (pp==NULL){
             modTreeRec *pnext=new modTreeRec();
+            pnext->minAuthLevel=minAuthLevel;
             base->rec.set(*(newModuleHandler->mp+t),pnext); 
             base=pnext;
          }
@@ -371,6 +426,9 @@ void WebSrv::regMod(char *p,reqHandler action,const char** mp)
 void WebSrv::addTreeLevel(String &js,int mLevel,modTreeRec *b){
    for(long c=0;c<b->rec.length();c++){
       String o="";
+      js+="if (App.session.authLevel>=";
+      js+=String(b->minAuthLevel,DEC);
+      js+="){";
       long modRecIndex=b->rec[c]->modRecIndex;
       if (modRecIndex!=-1){
          o=modReg.key(modRecIndex);
@@ -389,6 +447,7 @@ void WebSrv::addTreeLevel(String &js,int mLevel,modTreeRec *b){
          js+=b->rec.key(c);
          js+="');\n";
       }
+      js+="}";
       Serial.printf("level=%d = %s \n",mLevel,b->rec.key(c));
       modTreeRec *r=b->rec[c];
       if (r!=NULL){
@@ -398,7 +457,7 @@ void WebSrv::addTreeLevel(String &js,int mLevel,modTreeRec *b){
 }
 
 
-bool WebSrv::sendMenuScript(ESP8266WebServer *s,String &p){
+bool WebSrv::sendMenuScript(Session &session,ESP8266WebServer *s,String &p){
    char buf[128];
    String js;
    strcpy_P(buf,PSTR("define([\"MenuTab\"],function(MenuTab){"));      js+=buf;
@@ -416,7 +475,7 @@ bool WebSrv::sendMenuScript(ESP8266WebServer *s,String &p){
    return(true);
 }
 
-bool WebSrv::sendActionScript(ESP8266WebServer *s,String &p){
+bool WebSrv::sendActionScript(Session &session,ESP8266WebServer *s,String &p){
 
    String mod=p;
    if (mod.endsWith(".js")){
@@ -428,7 +487,7 @@ bool WebSrv::sendActionScript(ESP8266WebServer *s,String &p){
          if (modObj->action!=NULL){
             reqHandler f;
             f=modObj->action;
-            return(f(s,p));
+            return(f(session,s,p));
          } 
       }
    }
@@ -479,38 +538,47 @@ void WebSrv::setup(){
       });
    }
    if (srv!=NULL){
-      this->regNS("/info.html",[&](ESP8266WebServer *s,String &p)->bool{
+      this->regNS("/info.html",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
          this->pageInfo();
          return(true);
       });
-      this->regNS("/index.html",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->redirectToIndex(s,p));
+      this->regNS("/index.html",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->redirectToIndex(session,s,p));
       });
-      this->regNS("/js/REST/",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->onRestRequest(s,p));
+      this->regNS("/js/REST/",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->onRestRequest(session,s,p));
       });
-      this->regNS("/js/rest/",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->onRestRequest(s,p));
+      this->regNS("/js/rest/",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->onRestRequest(session,s,p));
       });
-      this->regNS("/js/json/WebSrvStatus",
-                  [&](ESP8266WebServer *s,String &p)->bool{
-         return(this->json_WebSrvStatus(s,p));
+      this->regNS("/js/json/WebSrvStatus",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->json_WebSrvStatus(session,s,p));
       });
-      this->regNS("/js/MenuTab.js",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->sendMenuScript(s,p));
+      this->regNS("/js/MenuTab.js",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->sendMenuScript(session,s,p));
       });
-      this->regNS("/js/sys/logon",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->logonHandler(s,p));
+      this->regNS("/js/sys/logon",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->logonHandler(session,s,p));
       });
-      this->regNS("/js/sys/logoff",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->logoffHandler(s,p));
+      this->regNS("/js/sys/logoff",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->logoffHandler(session,s,p));
       });
-      this->regNS("/js/act/handler/",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->sendActionScript(s,p));
+      this->regNS("/js/act/handler/",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->sendActionScript(session,s,p));
       });
       progCont();
-      this->regNS("/",[&](ESP8266WebServer *s,String &p)->bool{
-         return(this->redirectToIndex(s,p));
+      this->regNS("/",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->redirectToIndex(session,s,p));
       });
 
       srv->onNotFound([&](){ this->onRequest(); });
@@ -580,18 +648,18 @@ void reqNode::on(char *p,reqHandler f){
    nodeNS.set(p,r);
 }
 
-bool reqNode::handle(ESP8266WebServer *s,String &p){
+bool reqNode::handle(Session &session,ESP8266WebServer *s,String &p){
    for(long c=0;c<nodeNS.length();c++){
       char *ns=nodeNS.key(c);
       if (strlen(ns)>1 && ns[strlen(ns)-1]=='/'){
          if (p.startsWith(ns)){
             p=p.substring(strlen(ns));
-            return(nodeNS[c]->f(s,p));
+            return(nodeNS[c]->f(session,s,p));
          }
       }
       else{
          if (!strcmp(p.c_str(),ns)){
-            return(nodeNS[c]->f(s,p));
+            return(nodeNS[c]->f(session,s,p));
          }
       }
    }
