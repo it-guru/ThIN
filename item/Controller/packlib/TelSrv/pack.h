@@ -23,16 +23,16 @@ typedef enum SessionStep_Type
 
 class TelCli: public Print{
    protected:
-   String     lineBuffer;
-   String     runningCmd;
-   String     term;
-   bool       inShutdown;
-   bool       welcomeSend; 
-   SessionStepType     sessionStep;
-   bool       isTTY;
-   telnet_t * tc;
-   WiFiClient fd;
-   PackMaster *Controller=NULL;
+   String          lineBuffer;
+   String          runningCmd;
+   String          term;
+   bool            inShutdown;
+   bool            welcomeSend; 
+   SessionStepType sessionStep;
+   bool            isTTY;
+   telnet_t *      tc;
+   WiFiClient      fd;
+   PackMaster      *Controller=NULL;
    public:
    ~TelCli();
    Session    session;

@@ -18,7 +18,7 @@ class Session
    String user;
    String proto;
    String ipaddr;
-   int8_t uid=-1;
+   long   uid=-1;
    int8_t authLevel=0;
 };
 
@@ -148,9 +148,16 @@ class ConfigPack{
    }
    virtual bool getEntry(unsigned long req, String &var,String &val);
 
-   virtual bool setUser(int8_t un,const char *user,const char *pass,int8_t al);
+   virtual bool setUser(long un,const char *user,const char *pass,int8_t al);
 
-   virtual userEntry *getUser(int8_t unum);
+   virtual userEntry *getUser(long unum);
+};
+
+
+class AuthPack{
+   public:
+   virtual bool authUser(String &u,String &p,long *uid, int8_t *authLevel); 
+   virtual bool changeUserPassword(String &u,String &pold,String &pnew); 
 };
 
 
@@ -170,6 +177,7 @@ class PackMaster
    unsigned long     deepSleepDeadLine=0;
    UptimeController    Uptime;
    ConfigPack *cfg=NULL; 
+   AuthPack   *auth=NULL; 
    PackMaster(){
       Controller=this;
    }

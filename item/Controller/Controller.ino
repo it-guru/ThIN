@@ -10,6 +10,10 @@
 #include "./packlib/Cons/pack.h"
 #endif
 
+#ifdef packlib_simpleAuth
+#include "./packlib/simpleAuth/pack.h"
+#endif
+
 #ifdef packlib_KeepAlive
 #include "./packlib/KeepAlive/pack.h"
 #endif
@@ -68,6 +72,10 @@ void setup(){
 
 
    // Level 3 (all outer modules);
+
+   #ifdef packlib_simpleAuth
+      PM.add("auth",       new simpleAuth());
+   #endif
 
    #ifdef packlib_Net
       PM.add("net",       new Net());

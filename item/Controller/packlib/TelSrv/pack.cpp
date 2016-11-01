@@ -76,27 +76,23 @@ void TelCli::handleTelnet(telnet_event_t *ev){
           }
           else if (sessionStep==ASKPASSWORD){
              if (lineBuffer.length()>0){
-                if (Controller->cfg!=NULL){
-                   int8_t uid=0;
-                   userEntry *u=Controller->cfg->getUser(uid);
-                   bool foundUser=false;
-                   while(u!=NULL){
-                       if (session.user==u->username){
-                          if (lineBuffer==u->password){
-                             session.uid=uid;
-                             sessionStep=ONLINE;
-                          } 
-                          else{
-                             sessionStep=ASKUSER;
-                          }
-                          break;
-                       }
+                if (Controller->auth!=NULL){
+                   long   uid=-1;
+                   int8_t authLevel=-1;
+                   String password(lineBuffer);
 
-                       u=Controller->cfg->getUser(++uid);
+                   bool foundUser=Controller->auth->authUser(
+                                      session.user,password,&uid,&authLevel);
+                   if (foundUser){
+                      session.uid=uid;
+                      sessionStep=ONLINE;
                    }
-                   if (!foundUser){
+                   else{
                       sessionStep=ASKUSER;
                    }
+                }
+                else{
+                   sessionStep=ASKUSER;
                 }
                 lineBuffer=""; 
                 if (session.uid!=-1){
@@ -113,16 +109,17 @@ void TelCli::handleTelnet(telnet_event_t *ev){
                 }
                 else{
                    if (Controller->cfg!=NULL){
-                      int8_t uid=0;
-                      userEntry *u=Controller->cfg->getUser(uid);
-                      while(u!=NULL){
-                          if (lineBuffer==u->username){
-                             session.user=lineBuffer;
-                             break;
-                          }
-
-                          u=Controller->cfg->getUser(++uid);
-                      }
+                    //  int8_t uid=0;
+                    //  userEntry *u=Controller->cfg->getUser(uid);
+                    //  while(u!=NULL){
+                    //      if (lineBuffer==u->username){
+                    //         session.user=lineBuffer;
+                    //         break;
+                    //      }
+                    //
+                    //      u=Controller->cfg->getUser(++uid);
+                    //  }
+                      session.user=lineBuffer;
                       sessionStep=ASKPASSWORD;
                    }
                 }

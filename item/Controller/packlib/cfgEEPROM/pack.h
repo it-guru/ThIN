@@ -66,11 +66,12 @@ class cfgEEPROM : public Pack, public ConfigPack {
 
    public:
 
-   bool setUser(int8_t un,const char *user,const char *pass,int8_t authLevel){
+   bool setUser(long un,const char *user,const char *pass,int8_t authLevel){
       if (un>=MAXUSER) return(false);
       strncpy(m.user[un].username,user,sizeof(m.user[un].username));
       strncpy(m.user[un].password,pass,sizeof(m.user[un].password));
       m.user[un].authLevel=authLevel;
+      memDirty=millis();
       return(true);
    }
 
@@ -79,7 +80,7 @@ class cfgEEPROM : public Pack, public ConfigPack {
       setUser(0,"admin","admin",100);
       setUser(1,"user","user",50);
    }
-   userEntry *getUser(int8_t un){
+   userEntry *getUser(long un){
       if (un>=MAXUSER || un<0) return(NULL);
       if (m.user[un].username[0]==0) return(NULL);
       return(&m.user[un]);

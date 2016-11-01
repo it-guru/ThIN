@@ -8,6 +8,8 @@
 #define packlib_Cons_InitialMode CONS_SERIAL
 #define DEBUG_ESP_PORT Serial
 
+#define packlib_simpleAuth
+
 #define packlib_Net
 
 #define packlib_Sys

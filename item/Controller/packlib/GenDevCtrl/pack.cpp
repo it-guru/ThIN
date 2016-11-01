@@ -1,4 +1,5 @@
 #include "./pack.h"
+#include <stdlib.h>
 
 #ifdef packlib_WebSrv
 const char GenDevCtrl_ModActionJavaScript[] PROGMEM =
@@ -318,14 +319,39 @@ int GenDevCtrl::command(Session *session,Print *cli,char **args,int argn){
       }
       return(CMD_OK);
    }
+   else if (!strcmp(args[0],"analogset") && argn==3 &&
+        (!stricmp(args[1],"GPIO0") ||
+         !stricmp(args[1],"GPIO2"))){
+
+      int newmode=atoi(args[2]);
+      int gpio=-1;
+      if (!stricmp(args[1],"GPIO0")){
+         gpio=0;
+      }
+      if (!stricmp(args[1],"GPIO2")){
+         gpio=2;
+      }
+      pinMode(gpio,OUTPUT);
+      if (newmode>=0 && newmode<=PWMRANGE){
+         analogWrite(gpio,newmode);
+      }
+      else{
+         return(CMD_SYNTAX);
+      }
+      return(CMD_OK);
+   }
    else if (!strcmp(args[0],"help") &&
        ( (argn==1) ||
          (argn==2 && !strcmp(args[1],PackName.c_str())))){
       cli->printf("\n%s:\n",PackName.c_str());
-      cli->printf("set [GPIO0|GPIO2] [on|off|blink]\n",PackName.c_str());
+      cli->printf("set [GPIO0|GPIO2] [on|off|blink]\n");
       cli->printf("    Sets the given GPIO Port as output and switch\n");
       cli->printf("    to the requested state.\n");
-      cli->printf("\n","");
+      cli->printf("\n");
+      cli->printf("analogset [GPIO0|GPIO2] [0-%d]\n",PWMRANGE);
+      cli->printf("    Sets the given GPIO Port as output and switch\n");
+      cli->printf("    to the requested analog (PWM) value.\n");
+      cli->printf("\n");
       return(CMD_PART);
    }
    return(0);

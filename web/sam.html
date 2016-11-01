@@ -1,0 +1,99 @@
+<html>
+<head>
+<title>MyApp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+
+
+<script src="./spin.js"></script>
+<script src="./require.js"></script>
+</head>
+<style>
+body{
+   margin:0;
+   padding:0;
+   background-color:silver
+   font-size:10px;
+}
+div.logoBox{
+   padding:0;
+   margin:0;
+   height:3.8rem;
+   width:auto;
+   display:table-cell;
+   border:1px solid #999999;
+}
+div.logoArea{
+   width:15rem;
+}
+div.pageHead{
+   padding:0;
+   margin:0;
+   height:3.8rem;
+   width:100%;
+   display:table-cell;
+   border:1px solid #999999;
+}
+div.topBar{
+   display:table;
+   width:100%;
+   margin:0;
+   padding:0;
+   background-color:#006ec0; 
+}
+</style>
+<body>
+<div class="topBar">
+   <div class="logoBox">
+      <div id="logo" class="logoArea">
+            <div style='font-size:3rem'>Logo</div>
+      </div>
+   </div>
+   <div class="pageHead">
+   pageHead
+   <div style="height:2rem;transition: width 2s;top:4rem;width:calc( 100% - 9rem);height:3rem;position:fixed;z-index:101;display:block;padding:0 1.25rem;background-color:#268edf">
+     PageHead
+   </div>
+   </div>
+   <div class="navMenu">
+
+   </div>
+</div>
+
+<script>
+requirejs.config({
+    baseUrl: './'
+//    paths: {
+//        app: '../app'
+//    }
+});
+var spinner = new Spinner().spin()
+document.body.appendChild(spinner.el)
+
+require(['minified'],function(MINI){
+   console.log("MINI",MINI);
+   var _=MINI._, $=MINI.$, $$=MINI.$$, EE=MINI.EE, HTML=MINI.HTML;
+   var div = $('#myMovingDiv').set({$left: '0px', $top: '0px'});
+   console.log("div:",div);
+   $.wait(2000).then(function(){
+      div.animate({$left: '200px', $top: '0px'}, 900, 1).then(function() {
+             div.animate({$left: '100px', $top: '100px'}, 800);
+      }).then(function() {
+         return($.wait(1000));
+      }).then(function() {
+         div.animate({$$fade: 0}, 2000);
+         $("#logo").animate({$$fade: 0}, 1000);
+         $('#logo').animate({$width:0},1000);
+         return($.wait(3000));
+      }).then(function() {
+         $("#logo").animate({$$fade: 1}, 1000);
+         $('#logo').animate({$width:'15rem'},1000);
+         spinner.stop();
+      });
+   });
+});
+
+</script>
+</body>
+</html>

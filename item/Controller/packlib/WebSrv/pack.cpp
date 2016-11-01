@@ -112,6 +112,7 @@ String WebSrv::getCurrentSessionID(){
       String sessionvarname(SESSIONVARNAME);
       sessionvarname+="=";
       if ((p=cookie.indexOf(sessionvarname)) != -1) { 
+         p+=sessionvarname.length();
          sessionid=cookie.substring(p);
       }
    }
@@ -122,21 +123,19 @@ String WebSrv::getCurrentSessionID(){
 void WebSrv::onRequest(){
    String path = srv->uri();
    bool   isHandled=false;
-   CONS->printf("WebSrv: request: '%s'\n",path.c_str());
 
    String sessionid=this->getCurrentSessionID();
-   //if (sessionid!=""){
-   //   CONS->printf("Searching for  %s=%s in WebSessions\n",
-   //                SESSIONVARNAME,sessionid.c_str());
-   //}
+   CONS->printf("WebSrv: request: '%s' session='%s'\n",
+                path.c_str(),sessionid.c_str());
 
    WebSession *wsession=pWebSessions;
-   while(wsession->pNext!=NULL){
-      wsession=wsession->pNext;
+   do{
       if (wsession->key==sessionid){
          break;
       }
-   }
+      wsession=wsession->pNext;
+   }while(wsession!=NULL);
+
    if (sessionid!="" && (wsession==NULL || wsession==pWebSessions)){
       CONS->printf("invalid session key '%s' found\n",sessionid.c_str());
       String header = "HTTP/1.1 302 OK\r\n";
@@ -151,10 +150,12 @@ void WebSrv::onRequest(){
       return;
    }
    if (wsession==NULL){
+      //CONS->printf("WebSrv: curWebSession=anonymous\n");
       curWebSession=pWebSessions;
    }
    else{
       curWebSession=wsession;
+      //CONS->printf("WebSrv: curWebSession key='%s'\n",wsession->key.c_str());
       curWebSession->lastUseTime=Controller->Uptime.getSeconds();
    }
 
@@ -184,50 +185,51 @@ bool WebSrv::logonHandler(Session &session,ESP8266WebServer *s,String &p){
 
    String username=srv->arg("username");
    String password=srv->arg("password");
-   int8_t uid=0;
-   userEntry *u=Controller->cfg->getUser(uid);
+
+   long   uid=-1;
+   int8_t authLevel=-1;
+
    WebSession *wsession=NULL;
    String  sessionkey("");
-   while(u!=NULL){
-      if (username==u->username){
-         if (password==u->password){
-            wsession=pWebSessions;
-            WebSession *pPre;
-            while(wsession->pNext!=NULL){
-               pPre=wsession;
-               wsession=wsession->pNext;
-               if (wsession!=NULL){
-                  if (wsession->lastUseTime<Controller->Uptime.getSeconds()-60){
-                     WebSession *pNext=wsession->pNext;
-                     delete(wsession);
-                     pPre->pNext=pNext;
-                     wsession=pPre;
-                  }
-               }
-            }
-            wsession->pNext=new WebSession();
-            wsession=wsession->pNext;
-            sessionkey=username;
-            sessionkey+="+";
-            sessionkey+=srv->client().remoteIP().toString();
-            sessionkey+="+";
-            sessionkey+=String(millis(),DEC);
-            sessionkey=md5sum(sessionkey);
+   bool foundUser=false;
 
-            wsession->session.user=username;
-            wsession->session.proto="web";
-            wsession->session.uid=uid;
-            wsession->key=sessionkey;
-            wsession->lastUseTime=Controller->Uptime.getSeconds();
-            wsession->session.authLevel=u->authLevel;
-            wsession->session.ipaddr=srv->client().remoteIP().toString();
-            header+="Set-Cookie: ";
-            header+=SESSIONVARNAME;
-            header+="="+sessionkey+";Path=/\r\n";
+   if (Controller->auth!=NULL){
+      foundUser=Controller->auth->authUser(username,password,&uid,&authLevel);
+   }
+   if (foundUser){
+      wsession=pWebSessions;
+      WebSession *pPre;
+      while(wsession->pNext!=NULL){
+         pPre=wsession;
+         wsession=wsession->pNext;
+         if (wsession!=NULL){
+            if (wsession->lastUseTime<Controller->Uptime.getSeconds()-60){
+               WebSession *pNext=wsession->pNext;
+               delete(wsession);
+               pPre->pNext=pNext;
+               wsession=pPre;
+            }
          }
-         break;
       }
-      u=Controller->cfg->getUser(++uid);
+      wsession->pNext=new WebSession();
+      wsession=wsession->pNext;
+      sessionkey=username;
+      sessionkey+="+";
+      sessionkey+=srv->client().remoteIP().toString();
+      sessionkey+="+";
+      sessionkey+=String(millis(),DEC);
+      sessionkey=md5sum(sessionkey);
+
+      wsession->session.user=username;
+      wsession->session.proto="web";
+      wsession->session.uid=uid;
+      wsession->key=sessionkey;
+      wsession->lastUseTime=Controller->Uptime.getSeconds();
+      wsession->session.authLevel=authLevel;
+      wsession->session.ipaddr=srv->client().remoteIP().toString();
+      header+="Set-Cookie: ";
+      header+=SESSIONVARNAME;
+      header+="="+sessionkey+";Path=/\r\n";
    }
 
    if (srv->method() == HTTP_POST){  // logon via ajax
