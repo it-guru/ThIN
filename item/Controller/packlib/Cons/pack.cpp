@@ -16,7 +16,6 @@ Cons::Cons(int t){
 }
 
 void Cons::setup(){
-//   i=new Interval(5000,[&](long t){this->keepAliveMessage();});
 }
 
 void Cons::loop(){

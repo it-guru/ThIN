@@ -75,7 +75,10 @@ void GenDevCtrl::setup(){
    pinMode(pio,OUTPUT);
    digitalWrite(pio,LOW);
    gpioLst[pio].DevicePos=Controller->registerDevice(DIN,"GPIO0");
-   gpioLst[pio].i=new Interval(20,[&](long t){this->monGPIO(0);return(-1);}); 
+   gpioLst[pio].i=new Interval(20,[&](long cnt,int intervalFlag)->long{
+      this->monGPIO(0);
+      return(cnt);
+   }); 
 
    pio=2;
    pinMode(pio,OUTPUT);
@@ -92,7 +95,10 @@ void GenDevCtrl::setup(){
    pio=3;
    pinMode(pio,INPUT_PULLUP);
    gpioLst[pio].DevicePos=Controller->registerDevice(DIN,"GPIO3");
-   gpioLst[pio].i=new Interval(20,[&](long t){this->monGPIO(3);return(-1);}); 
+   gpioLst[pio].i=new Interval(20,[&](long cnt,int intervalFlag)->long{
+      this->monGPIO(3);
+      return(cnt);
+   }); 
 
    #ifdef packlib_WebSrv
    WebSrv *w=(WebSrv *) Controller->findPack("websrv");
@@ -261,7 +267,7 @@ void GenDevCtrl::setGPIOblink(int gpio,long ti,long cnt){
       delete(gpioLst[gpio].i);
       gpioLst[gpio].i=NULL;
    }
-   gpioLst[gpio].i=new Interval(ti,[&,gpio](long t){
+   gpioLst[gpio].i=new Interval(ti,[&,gpio](long cnt,int intervalFlag)->long{
       if (this->gpioLst[gpio].curBlinkState){
          digitalWrite(gpio,LOW);
          this->gpioLst[gpio].curBlinkState=false;
@@ -270,6 +276,7 @@ void GenDevCtrl::setGPIOblink(int gpio,long ti,long cnt){
          digitalWrite(gpio,HIGH);
          this->gpioLst[gpio].curBlinkState=true;
       }
+      return(cnt);
    },cnt);
 }
 

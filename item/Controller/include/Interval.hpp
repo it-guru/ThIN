@@ -4,74 +4,44 @@
 
 #ifndef _INTERVAL_OBJECT__
 #define _INTERVAL_OBJECT__
-typedef std::function<void(long)> IntervalHandlerFunction;
+typedef std::function<long(long,int)> IntervalHandlerFunction;
+class Interval;
+
 class Interval{
-   private:
+   protected:
    long interval;
    long countdown;
    long oldt;
    long cnt;
-   //void (*callback)(long);
+   int  intervalFlag=0;
    IntervalHandlerFunction callback;   
 
-   long t(){
-      return((long) millis());
-   };
+   long t();
 
    public:
-   Interval(long i,IntervalHandlerFunction f){
-      interval=i;
-      countdown=interval;
-      oldt=t();
-      callback=f;
-      cnt=-1;         // endless
-   };
-   Interval(long i,IntervalHandlerFunction f,long setcnt){
-      interval=i;
-      countdown=interval;
-      oldt=t();
-      callback=f;
-      cnt=setcnt; 
-   };
+   Interval *pNext=NULL;
+   Interval(){};
+   Interval(long i,IntervalHandlerFunction f);
+   Interval(long i,IntervalHandlerFunction f,long setcnt);
 
-   long loop(){
-      if (cnt!=0){
-         long newt=t();
-         if (newt!=oldt){
-            countdown-=(newt-oldt);
-            oldt=newt;
-         }
-         if (countdown<=0){
-            callback(newt); 
-            countdown=interval;
-         }
-      }
-      if (cnt>0){
-         cnt--;
-      }
-      return(cnt);   // if cnt==0 then parent should kill the timer
-   };
+   virtual long loop();
 };
 
-class xUptimeController {
-   public:
-     void loop(){
-        unsigned long now=millis();
-        if (now-lastTick>1000){
-           seconds+=(now-lastTick)/1000UL;
-           lastTick=now;
-        }
-     };
-     unsigned long getSeconds(){
-        unsigned long now=millis();
-        return(seconds);
-     };
 
-   private:
-     unsigned long seconds=0;
-     unsigned long lastTick=0;
+typedef enum IntervalBlinkType
+{
+   DIG_BLK    = 10,
+   SIN_BLK,
+} IntervalBlink_t;
+
+
+class IntervalBlink : public Interval{
+   
+   IntervalBlink(long i,IntervalHandlerFunction f);
+   IntervalBlink(long i,IntervalHandlerFunction f,long setcnt);
+   long loop();
+
 };
-
 
 class UptimeController {
    public:

@@ -172,6 +172,7 @@ class PackMaster
    long              tickscount=0;
    unsigned long     deepSleep=0;
    unsigned long     deepSleepSleeptime=0;
+   Interval *pInterval=NULL;
 
    public:
    unsigned long     deepSleepDeadLine=0;
@@ -188,7 +189,11 @@ class PackMaster
    const char *getDeviceName(long pos);
    SysDeviceType  getDeviceType(long pos);
    long  getDevicePos(const char *name);
+
    long  load();
+
+   Interval *addInterval(Interval &iobj);
+   void      delInterval(Interval *pI);
 
    Pack *findPack(const char *name);
    void setup();

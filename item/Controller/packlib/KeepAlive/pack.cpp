@@ -1,14 +1,14 @@
 #include "./pack.h"
 
-void KeepAlive::keepAliveMessage(){
+void KeepAlive::keepAliveMessage(long cnt,int intervalFlag){
    // ESP Class
    // https://github.com/esp8266/Arduino/blob/master/cores/esp8266/Esp.h
    long load=Controller->load();
    CONS->printf("KeepAlive: FreeHeap:%" PRIu32 " Bytes load=%ld "
-                "DeepSleepTime=%ld uptime=%ld\n",
+                "DeepSleepTime=%ld uptime=%ld (%ld/%d)\n",
                 ESP.getFreeHeap()/* uint32_t */ ,load,
                 Controller->deepSleepDeadLine,
-                Controller->Uptime.getSeconds());
+                Controller->Uptime.getSeconds(),cnt,intervalFlag);
 }
 
 bool KeepAlive::validateVariable(String &var,char *ov,String &val,String &msg){
@@ -53,7 +53,10 @@ const char KeepAlive_ModActionJavaScript[] PROGMEM =
 
 
 void KeepAlive::setup(){
-   i=new Interval(10000,[&](long t){this->keepAliveMessage();return(-1);});
+   i=new Interval(10000,[&](long cnt,int intervalFlag)->long{
+      this->keepAliveMessage(cnt,intervalFlag);
+      return(cnt);
+   },50);
    CONS->printf("KeepAlive: Monitor setup() done\n");
 
 

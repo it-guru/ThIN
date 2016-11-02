@@ -15,7 +15,7 @@ class KeepAlive : public Pack {
    Interval *i=NULL;
 
    public:
-   void         keepAliveMessage();
+   void         keepAliveMessage(long cnt,int intervallFlag);
    #ifdef packlib_WebSrv
    void         keepAliveMessageWeb(ESP8266WebServer *srv,String &p);
    #endif

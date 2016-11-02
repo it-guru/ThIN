@@ -125,7 +125,59 @@ void PackMaster::loop(){
       delay(500);
       ESP.deepSleep(deepSleepSleeptime*1000000);
    }
+   Interval *pI=pInterval;
+   while(pI!=NULL){
+      Interval *pOp=pI;
+      long cnt=pOp->loop();
+      pOp=pOp->pNext;
+      if (!cnt){
+         delInterval(pI);
+      }
+   }
 }
+
+Interval *PackMaster::addInterval(Interval &iObj){
+   iObj.pNext=NULL;
+   if (pInterval==NULL){
+      pInterval=&iObj;
+   }
+   else{
+      Interval *pI=pInterval;
+      while(pI->pNext!=NULL){
+         pI=pI->pNext;
+      }
+      pI->pNext=&iObj;
+   }
+   return(&iObj);
+}
+
+void PackMaster::delInterval(Interval *pIdel){
+  if (pInterval==pIdel){
+     if (pInterval->pNext==NULL){
+        pInterval=NULL;
+     }
+     else{
+        pInterval=pInterval->pNext;
+     }
+  }
+  else{
+     Interval *pI=pInterval;
+     do{
+       Interval *pOld=pI;
+       pI=pI->pNext;
+       if (pI==pIdel){
+          if (pI->pNext==NULL){
+             pOld->pNext=NULL;
+          }
+          else{
+             pOld->pNext=pI->pNext;
+          }
+       }
+     }while(pI!=NULL);
+  }
+  delete(pIdel);
+}
+
 
 int PackMaster::command(Session *session,Print *cli,String &cmd){
    CONS->printf("PackMaster: Command '%s'\n",cmd.c_str());

@@ -202,8 +202,14 @@ void fhem::srvSend(){
 
 
 void fhem::setup(){
-   i=new Interval(10000,[&](long t){this->srvSend();});
-   con=new Interval(15000,[&](long t){this->srvConnect();});
+   i=new Interval(10000,[&](long cnt,int intervalFlag)->long{
+      this->srvSend();
+      return(cnt);
+   });
+   con=new Interval(15000,[&](long cnt,int intervalFlag)->long{
+      this->srvConnect();
+      return(cnt);
+   });
 }
 
 void fhem::loop(){
