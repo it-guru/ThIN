@@ -63,17 +63,17 @@ int Sys::command(Session *session,Print *cli,char **args,int argn){
 
    if (!strcmp(args[0],"sysvar") && argn==3){
       unsigned long c=0;
-      String var;
-      String val;
+      String var(args[1]);
+      String val(args[2]);
       String msg;
-      if (!setLocalVar(args[1],args[2],msg)){
+      if (!Controller->cfg->setVar(var.c_str(),val.c_str(),msg)){
          cli->printf("%s\n",msg.c_str());
          return(CMD_SYNTAX);
       }
       return(CMD_OK);
    }
    if (!strcmp(args[0],"show") && argn==2 &&
-            !strcmp(args[1],"sysvar")){
+            !strcmp(args[1],"sysvars")){
       unsigned long c=0;
       String var;
       String val;
@@ -132,7 +132,7 @@ int Sys::command(Session *session,Print *cli,char **args,int argn){
       cli->printf("    Displays informations about general system\n");
       cli->printf("    parameters.\n");
       cli->printf("\n","");
-      cli->printf("show %s config\n",PackName.c_str());
+      cli->printf("show sysvars\n");
       cli->printf("    Displays all variables in non-volatile memory.\n");
       cli->printf("\n","");
       cli->printf("uptime\n");

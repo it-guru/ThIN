@@ -14,7 +14,8 @@ echo "" > ${CDIR}.hpp
 
 
 
-find ${CDIR} -name \*.js -o -name \*.html -o -name \*.gif -o -name \*.svg | while read f; do
+find ${CDIR} -name \*.js -o -name \*.html -o -name \*.css -o \
+             -name \*.gif -o -name \*.svg | while read f; do
    F=$(echo $f | sed -e "s/^${CDIR}//");
    D=$(echo $F | tr '[a-z]' '[A-Z'] | sed -e 's/^\///' | sed -e 's/[-\/\.]/_/g')
    echo "f=$f  F=$F D=$D"
@@ -27,6 +28,10 @@ find ${CDIR} -name \*.js -o -name \*.html -o -name \*.gif -o -name \*.svg | whil
        ${CDIR}.tmp
    cat ${CDIR}.tmp >> ${CDIR}.hpp
    rm ${CDIR}.tmp
+   if [[ $f =~ \.css$ ]]; then
+      echo "   srv->send_P(200,PSTR(\"text/css\"),${D}_DATA,${D}_LENGTH);" \
+           >>${CDIR}.cpp
+   fi
    if [[ $f =~ \.html$ ]]; then
       echo "   srv->send_P(200,PSTR(\"text/html\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp

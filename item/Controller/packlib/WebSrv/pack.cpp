@@ -410,10 +410,12 @@ void WebSrv::regMod(char *p,reqHandler action,const char** mp,
    if (newModuleHandler->mp!=NULL){
       modTreeRec *base=&modTree;
       for(int t=0;*(newModuleHandler->mp+t)!=NULL;t++){
+         CONS->printf("regMod p=%s\n",*(newModuleHandler->mp+t));
          modTreeRec *pp=base->rec.get(*(newModuleHandler->mp+t));
          if (pp==NULL){
             modTreeRec *pnext=new modTreeRec();
             pnext->minAuthLevel=minAuthLevel;
+            CONS->printf("regMod add indirect=%s in level t=%d minAuthLevel=%d\n",*(newModuleHandler->mp+t),t,pnext->minAuthLevel);
             base->rec.set(*(newModuleHandler->mp+t),pnext); 
             base=pnext;
          }
@@ -565,15 +567,15 @@ void WebSrv::setup(){
                   (Session &session,ESP8266WebServer *s,String &p)->bool{
          return(this->sendMenuScript(session,s,p));
       });
-      this->regNS("/js/sys/logon",[&]
+      this->regNS("/jssys/logon",[&]
                   (Session &session,ESP8266WebServer *s,String &p)->bool{
          return(this->logonHandler(session,s,p));
       });
-      this->regNS("/js/sys/logoff",[&]
+      this->regNS("/jssys/logoff",[&]
                   (Session &session,ESP8266WebServer *s,String &p)->bool{
          return(this->logoffHandler(session,s,p));
       });
-      this->regNS("/js/act/handler/",[&]
+      this->regNS("/jsact/handler/",[&]
                   (Session &session,ESP8266WebServer *s,String &p)->bool{
          return(this->sendActionScript(session,s,p));
       });
