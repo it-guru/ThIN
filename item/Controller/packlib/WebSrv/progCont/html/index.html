@@ -5,11 +5,23 @@
 <script src="../js/spin.js"></script><script src="/js/require.js"></script>
 <style>
 fieldset.main{overflow:auto;padding:2em 3em 2em 2em;border:1px solid #4CAF50;background-color:white;margin:20px;border-radius:5px;border-collapse:collapse;min-width:16em;-moz-border-radius:10px;-webkit-border-radius:10px;}
-fieldset.sw{overflow:auto;padding:10px 10px 10px 10px;border:1px solid black;margin-top:10px;border-radius:5px;border-collapse:collapse;display:inline;}
+fieldset.sw{overflow:auto;padding:0px 10px 10px 10px;border:1px solid black;margin-top:10px;border-radius:5px;border-collapse:collapse;display:inline;}
+div.swlabel{ float:left;margin-right:1em;overflow:hidden; font-size:0.9em; margin-top:0.2em;padding-top:0.2em}
 fieldset.blk{overflow:visible;border:0;margin-right:1em;border-radius:5px;border-collapse:collapse;}
 label.col1{float:left;width:5em;padding-top:.3em;text-align:right;margin-right:1.5em;}
 input{display:block;font-size:1em;margin-bottom:.8em;border:.1em solid #000;padding:.5em;width:15em;border-radius:5px;width:72%;}
 input[type=button]{width:6em;display:inline;margin-left:.70em;float:right;padding:.4em;cursor:pointer;}
+input[type=button].set{
+    width:4.3em;
+    display:inline;
+    margin:0.3em;
+    margin-top:0;
+    margin-left:0.70em;
+    float:right;
+    font-size:0.6em;
+    padding: 0.2em;
+    cursor:pointer;
+}
 .onoffswitch{position:relative;width:90px;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;margin-left:.5em;margin-right:.2em;}
 .onoffswitch-checkbox{display:none;}
 .onoffswitch-label{display:block;overflow:hidden;cursor:pointer;border:2px solid #999;border-radius:20px;}
@@ -17,9 +29,11 @@ input[type=button]{width:6em;display:inline;margin-left:.70em;float:right;paddin
 .onoffswitch-inner:before,.onoffswitch-inner:after{display:block;float:left;width:50%;height:1.9em;padding:0;line-height:1.9em;font-size:14px;color:white;font-family:Trebuchet,Arial,sans-serif;font-weight:bold;box-sizing:border-box;}
 .onoffswitch-inner:before{content:"ON";padding-left:10px;background-color:#E6E65F;color:#000;}
 .onoffswitch-inner:after{content:"OFF";padding-right:10px;background-color:#EEE;color:#999;text-align:right;}
-.onoffswitch-switch{display:block;width:18px;margin:6px;background:gray;position:absolute;top:0;bottom:0;right:56px;border:2px solid #999;border-radius:20px;transition:all .3s ease-in 0s;}
+.onoffswitch-switch{display:block;width:18px;margin:6px;background:gray;position:absolute;top:0;bottom:0;right:40px;border:2px solid #999;border-radius:20px;transition:all .3s ease-in 0s;}
 .onoffswitch-checkbox:checked+.onoffswitch-label .onoffswitch-inner{margin-left:0;}
 .onoffswitch-checkbox:checked+.onoffswitch-label .onoffswitch-switch{right:0;}
+
+
 html,body{font-family:Verdana,sans-serif;margin:0;padding:0;}
 #background{position:absolute;width:100%;top:80px;z-index:-1;height:80%;background-image:url('../img/background.gif');}
 html{overflow-x:hidden;}
@@ -219,7 +233,12 @@ var FRM={
  },
  swi:function(type,id,label,help){
     return("<fieldset class=sw>"+
-           "<legend>"+label+"</legend><div  class=\"onoffswitch\">"+
+           "<legend>"+label+"</legend>"+
+           "<div class=\"swlabel\">Device Info"+help+
+           "<input class=set type=button value=\"set on\">"+
+           "<input class=set type=button value=\"set off\">"+
+           "</div>"+
+           "<div  style=\"margin-left:10em\"  class=\"onoffswitch\">"+
            "<input type=\"checkbox\" name=\""+id+"\" "+
            "class=\"onoffswitch-checkbox\" id=\""+id+"\">"+
            "<label class=\"onoffswitch-label\" for=\""+id+"\">"+
@@ -467,7 +486,9 @@ require(["jquery"],function($){
           }
           if (authstatechanged){
              doControlNavigation();
-             $("#main").html("");
+             if (data.sessionAuthLevel==0){ // seems to bee autlooged out
+                $("#main").html("");
+             }
           }
        }
 

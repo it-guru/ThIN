@@ -37,15 +37,5 @@ this->regNS("/js/jquery.min.js",
    srv->send_P(200,PSTR("text/javascript"),JS_JQUERY_MIN_JS_DATA,JS_JQUERY_MIN_JS_LENGTH);
   return(true);
 });
-this->regNS("/css/form.css",
-    [&](Session &session,ESP8266WebServer *s,String &p)->bool{
-   srv->send_P(200,PSTR("text/css"),CSS_FORM_CSS_DATA,CSS_FORM_CSS_LENGTH);
-  return(true);
-});
-this->regNS("/css/style.css",
-    [&](Session &session,ESP8266WebServer *s,String &p)->bool{
-   srv->send_P(200,PSTR("text/css"),CSS_STYLE_CSS_DATA,CSS_STYLE_CSS_LENGTH);
-  return(true);
-});
 
 }
