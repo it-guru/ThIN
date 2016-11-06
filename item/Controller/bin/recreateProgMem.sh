@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ ! -d ./packlib ]; then
+   echo "recreateProgMem.sh needs to be called from ThIN root dir" >&2
+   exit 1
+fi
+
+for dir in packlib/*/progCont; do
+(
+cd $dir
+cd ..
 PACK=$(basename `pwd`)
 CDIR="progCont"
 
@@ -20,8 +29,23 @@ find ${CDIR} -name \*.js -o -name \*.html -o -name \*.css -o \
    D=$(echo $F | tr '[a-z]' '[A-Z'] | sed -e 's/^\///' | sed -e 's/[-\/\.]/_/g')
    echo "f=$f  F=$F D=$D"
    echo "this->regNS(\"$F\"," >> ${CDIR}.cpp
-   echo "            [&](Session &session,ESP8266WebServer *s,String &p)->bool{" >>${CDIR}.cpp
-   xxd -i  $f  > ${CDIR}.tmp
+   echo "    [&](Session &session,ESP8266WebServer *s,String &p)->bool{" >>${CDIR}.cpp
+
+   if [[ $f =~ \.css$ ]]; then
+      echo "now css"
+      java -jar ../../contrib/yui/yuicompressor-2.4.2.jar  \
+           --type css $f > ${f}.tmp1
+   elif [[ $f =~ \.js$ ]]; then
+      java -jar ../../contrib/yui/yuicompressor-2.4.2.jar  \
+           --type js  $f > ${f}.tmp1
+   else 
+      cat $f > ${f}.tmp1
+   fi
+   xxd -i  ${f}.tmp1  > ${CDIR}.tmp
+   rm ${f}.tmp1
+  
+   sed -i -e "s/_tmp1\[\]//" \
+       ${CDIR}.tmp
    sed -i -e "s/unsigned int .*len =/unsigned int ${D}_LENGTH =/" \
        ${CDIR}.tmp
    sed -i -e "s/unsigned char .*=/const char ${D}_DATA\[\] PROGMEM = /g" \
@@ -58,6 +82,9 @@ cat <<EOF >> ${CDIR}.cpp
 
 }
 EOF
+
+)
+done
 
 
 

@@ -415,7 +415,7 @@ void WebSrv::regMod(char *p,reqHandler action,const char** mp,
          if (pp==NULL){
             modTreeRec *pnext=new modTreeRec();
             pnext->minAuthLevel=minAuthLevel;
-            CONS->printf("regMod add indirect=%s in level t=%d minAuthLevel=%d\n",*(newModuleHandler->mp+t),t,pnext->minAuthLevel);
+            CONS->printf("regMod add indirect=%s in level t=%d minAuthLevel=%d adr=%x\n",*(newModuleHandler->mp+t),t,pnext->minAuthLevel,pnext);
             base->rec.set(*(newModuleHandler->mp+t),pnext); 
             base=pnext;
          }
@@ -431,7 +431,7 @@ void WebSrv::addTreeLevel(String &js,int mLevel,modTreeRec *b){
    for(long c=0;c<b->rec.length();c++){
       String o="";
       js+="if (App.session.authLevel>=";
-      js+=String(b->minAuthLevel,DEC);
+      js+=String(b->rec[c]->minAuthLevel,DEC);
       js+="){";
       long modRecIndex=b->rec[c]->modRecIndex;
       if (modRecIndex!=-1){
@@ -452,7 +452,8 @@ void WebSrv::addTreeLevel(String &js,int mLevel,modTreeRec *b){
          js+="');\n";
       }
       js+="}";
-      Serial.printf("level=%d = %s \n",mLevel,b->rec.key(c));
+      //CONS->printf("addTreeLevel: level=%d =%s minAuthLevel=%d\n",
+      //              mLevel,b->rec.key(c),b->rec[c]->minAuthLevel);
       modTreeRec *r=b->rec[c];
       if (r!=NULL){
          addTreeLevel(js,mLevel+1,r); 
