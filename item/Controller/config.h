@@ -1,6 +1,7 @@
 //
 // Activate all needed modules
 //
+#define THIN_VERSION "$Id: $"
 #define packlib_WebSrv
 
 #define packlib_Cons

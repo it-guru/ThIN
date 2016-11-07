@@ -19,9 +19,6 @@ void PackMaster::add(const char *name,Pack *p){
    Pkg.set(name,p);
    p->setController(this);
    p->Name(name);
-   if (!strcmp(name,"console")){
-      console=(PackStdCons *) p;
-   }
 }
 
 int PackMaster::registerDevice(SysDeviceType t,const char *name){

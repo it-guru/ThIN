@@ -167,7 +167,6 @@ class PackMaster
    private:
    DynHashTable<Pack *> Pkg;
    DynHashTable<int> Dev;
-   PackStdCons          *console=NULL;
    PackMaster *Controller=NULL;
    long              tickscount=0;
    unsigned long     deepSleep=0;
@@ -177,8 +176,10 @@ class PackMaster
    public:
    unsigned long     deepSleepDeadLine=0;
    UptimeController    Uptime;
-   ConfigPack *cfg=NULL; 
-   AuthPack   *auth=NULL; 
+
+   ConfigPack     *cfg=NULL; 
+   AuthPack       *auth=NULL; 
+   PackStdCons    *console=NULL;
    PackMaster(){
       Controller=this;
    }

@@ -22,6 +22,7 @@ class Cons : public PackStdCons {
    protected:
    int curMode=0;
    int eol=1;
+   boolean progMode=false;
 
    public:
    Cons(int t);

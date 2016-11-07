@@ -1,8 +1,10 @@
 #include "./pack.h"
 
 Cons::Cons(int t){
+   progMode=digitalRead(0) ? false:true;
+
    if (t&CONS_SERIAL_AUTODISABLE){
-      if (digitalRead(0)){  // disable SERIAL_CON if flashmode GPIO0=0
+      if (progMode){
          t=t&(~CONS_SERIAL);
       }
       else{
@@ -16,6 +18,7 @@ Cons::Cons(int t){
 }
 
 void Cons::setup(){
+   Controller->console=this;
 }
 
 void Cons::loop(){

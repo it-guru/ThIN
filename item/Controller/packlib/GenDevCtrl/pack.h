@@ -12,6 +12,17 @@
 
 
 
+typedef struct _pinmon{
+   char   *name;
+   long   btnDevPos;
+   long   swiDevPos;
+
+   
+
+} pinMonStruct;
+
+
+
 typedef struct _gpioListen{
    boolean        watch=false;
 
