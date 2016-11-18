@@ -49,12 +49,15 @@
 PackMaster PM;
 
 void setup(){
+
+   
    WiFi.onEvent([](WiFiEvent_t e){            // needed to dispatch Network
       PM.handleWiFiEvent(e);                  // Events
    }); 
 
    // Level 0 (very native Modules)
-
+  
+      
    #ifdef packlib_cfgEEPROM 
       PM.add("cfg",       new cfgEEPROM());
    #endif
@@ -69,8 +72,10 @@ void setup(){
    #ifdef packlib_GenDevCtrl
       PM.add("gendevctrl",new GenDevCtrl());
    #endif
+   PM.IntervalLoop();
 
-
+  
+ 
    // Level 3 (all outer modules);
 
    #ifdef packlib_simpleAuth
@@ -96,7 +101,7 @@ void setup(){
    #ifdef packlib_TelSrv
       PM.add("telnet",    new TelSrv());
    #endif
- 
+  
    #ifdef packlib_Sys
       PM.add("sys",       new Sys());
    #endif
@@ -108,8 +113,13 @@ void setup(){
    #ifdef packlib_fhem
       PM.add("fhem",      new fhem());
    #endif 
+   PM.Console()->printf("PackMaster Packs registered\n");
+   PM.IntervalLoop();
    PM.setup();
+   PM.Console()->printf("PackMaster Packs setuped\n");
+   PM.IntervalLoop();
    PM.begin();
+   PM.Console()->printf("PackMaster Packs begined\n");
 }
 
 void loop(){

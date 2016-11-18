@@ -19,6 +19,9 @@ void PackMaster::add(const char *name,Pack *p){
    Pkg.set(name,p);
    p->setController(this);
    p->Name(name);
+   if (!strcmp(name,"console")){       // console can not be set in setup of 
+      this->console=(PackStdCons*) p;  // because it is used already in setup
+   }                                   // and add phase of other Pack's
 }
 
 int PackMaster::registerDevice(SysDeviceType t,const char *name){
@@ -107,6 +110,20 @@ long PackMaster::load(){
    return(l);
 }
 
+void PackMaster::IntervalLoop(){
+   Interval *pI=pInterval;
+   while(pI!=NULL){
+      Interval *pOp=pI;
+      long cnt=pOp->loop();
+      pOp=pOp->pNext;
+      if (!cnt){
+         CONS->printf("delete=%x %ld\n",pOp,cnt);
+         delInterval(pI);
+      }
+      pI=pOp;
+   }
+}
+
 void PackMaster::loop(){
    unsigned t1=get_ccount();
    for(long c=0;c<Pkg.length();c++){
@@ -122,33 +139,25 @@ void PackMaster::loop(){
       delay(500);
       ESP.deepSleep(deepSleepSleeptime*1000000);
    }
-   Interval *pI=pInterval;
-   while(pI!=NULL){
-      Interval *pOp=pI;
-      long cnt=pOp->loop();
-      pOp=pOp->pNext;
-      if (!cnt){
-         delInterval(pI);
-      }
-   }
+   this->IntervalLoop();
 }
 
-Interval *PackMaster::addInterval(Interval &iObj){
-   iObj.pNext=NULL;
+Interval *PackMaster::addInterval(Interval *iObj){
+   iObj->pNext=NULL;
    if (pInterval==NULL){
-      pInterval=&iObj;
+      pInterval=iObj;
    }
    else{
       Interval *pI=pInterval;
       while(pI->pNext!=NULL){
          pI=pI->pNext;
       }
-      pI->pNext=&iObj;
+      pI->pNext=iObj;
    }
-   return(&iObj);
+   return(iObj);
 }
 
-void PackMaster::delInterval(Interval *pIdel){
+Interval *PackMaster::delInterval(Interval *pIdel){
   if (pInterval==pIdel){
      if (pInterval->pNext==NULL){
         pInterval=NULL;
@@ -173,6 +182,7 @@ void PackMaster::delInterval(Interval *pIdel){
      }while(pI!=NULL);
   }
   delete(pIdel);
+  return(NULL);
 }
 
 

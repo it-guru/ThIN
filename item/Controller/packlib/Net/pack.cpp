@@ -95,7 +95,9 @@ void Net::Connect(){
   else{
      CONS->printf("Begin Network config ...\n");
    //  WiFi.begin("095449871027-R","CodeREedIs752272aA");
+     yield();
      WiFi.begin("","");
+     yield();
      CONS->printf("AP Connect ...\n");
   }
 }

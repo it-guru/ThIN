@@ -193,8 +193,9 @@ class PackMaster
 
    long  load();
 
-   Interval *addInterval(Interval &iobj);
-   void      delInterval(Interval *pI);
+   void     IntervalLoop();
+   Interval *addInterval(Interval *iobj);
+   Interval *delInterval(Interval *pI);
 
    Pack *findPack(const char *name);
    void setup();
@@ -266,8 +267,18 @@ class Pack{
   
 };
 
+class ledCtrl;
+
 class PackStdCons : public Pack, public Print{
- //  public:
+   public:
+   virtual bool installStandardSysControl(int pio){
+      return(false);
+   };
+   virtual void setSysLED(int   level,bool rst);
+   virtual void setSysLED(int   level){setSysLED(level,true);};
+   virtual void setSysLED(float level,bool rst);
+   virtual void setSysLED(float level){setSysLED(level,true);};
+   virtual void setSysLED(ledCtrl *p);
  //  virtual void printf(const char *fmt, ...){}; // only for Cons calls
 };
 

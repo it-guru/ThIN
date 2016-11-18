@@ -1,7 +1,7 @@
 #include "./pack.h"
 
 Cons::Cons(int t){
-   progMode=digitalRead(0) ? false:true;
+   progMode=digitalRead(0) ? true:false;
 
    if (t&CONS_SERIAL_AUTODISABLE){
       if (progMode){
@@ -17,8 +17,150 @@ Cons::Cons(int t){
    set(t);
 }
 
+
+class BtnCtrl{
+   PackMaster *Controller;
+   Interval   *pInt=NULL;
+   long *pressLevels;
+   int  mode;  // RISING pressed=high ; FALLING pressed=low
+   long pressTime=0;
+   bool pressedTarget=true;
+   int  curPressLevel=-2;
+   int gpio;
+   public:
+   BtnCtrl(PackMaster *Controller,int gpio,int mode,long *pressLevels){
+       this->Controller=Controller;
+       this->pressLevels=pressLevels;
+       this->gpio=gpio;
+       this->mode=mode;
+       this->mode=RISING;
+       this->initBtn();
+   };
+   BtnCtrl(PackMaster *Controller,int gpio){
+       this->Controller=Controller;
+       static long pressLevels[]={20,    // entprellen
+                                3000,  // fast blink
+                                3100,  // hot for WPS
+                                10000, // unhot for WPS
+                                30000, // hot deep reset
+                                0};
+       this->gpio=gpio;
+       this->pressLevels=(long *)pressLevels;
+       this->mode=FALLING;
+       this->initBtn();
+   };
+   ~BtnCtrl(){
+      if (this->pInt!=NULL){
+         delete(this->pInt);
+         this->pInt=NULL;
+      }
+   }
+   void pressLevelHandler(int oldLevel,int newLevel){
+       if (newLevel==0){
+          CONS->printf("SYSLED: on\n");
+          CONS->setSysLED(true);
+       } 
+       if (newLevel==1){
+          CONS->printf("SYSLED: short blink\n");
+          CONS->setSysLED(new ledCtrl(Controller,700));
+       }
+       if (newLevel==3){
+          CONS->printf("SYSLED: short sinblink\n");
+          CONS->setSysLED(new ledCtrl(Controller,4000,-50));
+       }
+       if (newLevel<0){
+          CONS->printf("SYSLED: off\n");
+          CONS->setSysLED(false);
+       }
+       CONS->printf("pressLevelHandler: oldLevel=%d newLevel=%d\n",
+                    oldLevel,newLevel);
+   };
+   void initBtn(){
+      if (this->mode==FALLING){
+         pressedTarget=false;
+      }
+      pInt=Controller->addInterval(new Interval(10,
+                               [&](long cnt,int iFlag)->long{
+         long now=millis();
+         if (digitalRead(gpio)==pressedTarget){
+            if (curPressLevel==-2){
+               pressTime=now;
+               curPressLevel++;
+            }
+            if (curPressLevel>-2){
+               if (now-pressTime>pressLevels[curPressLevel+1]){
+                  int oldPressLevel=curPressLevel;
+                  curPressLevel++;
+                  pressLevelHandler(oldPressLevel,curPressLevel);      
+               }
+            }
+         }
+         else{
+            if (curPressLevel>-2){
+               pressLevelHandler(curPressLevel,-1);
+               curPressLevel=-2; 
+            }
+         }
+         return(cnt);
+      }));
+   };
+};
+
+
+
+bool Cons::installStandardSysControl(int pio){
+   pinMode(pio,INPUT); 
+   CONS->printf("Cons::installStandardSysControl on gpio=%d\n",pio);
+   BtnCtrl *b=new BtnCtrl(Controller,pio);
+   return(true);
+}
+
+void Cons::setSysLED(int level,bool rst){
+   if (rst){
+      if (sysLedCtrl!=NULL){
+         delete(sysLedCtrl);
+         sysLedCtrl=NULL;
+      }
+   }
+   if (curMode&CONS_LED){
+      if (level){
+         analogWrite(packlib_Cons_SysLED,0);
+         digitalWrite(packlib_Cons_SysLED,LOW);
+      }
+      else{
+         analogWrite(packlib_Cons_SysLED,PWMRANGE);
+         digitalWrite(packlib_Cons_SysLED,HIGH);
+      }
+   }
+}
+
+void Cons::setSysLED(float level,bool rst){
+   if (rst){
+      if (sysLedCtrl!=NULL){
+         delete(sysLedCtrl);
+         sysLedCtrl=NULL;
+      }
+   }
+   if (curMode&CONS_LED){
+      if (level>1.0) level=1.0;
+      if (level<0.0) level=0.0;
+      int l=(int) (level*PWMRANGE);
+      analogWrite(packlib_Cons_SysLED,PWMRANGE-l);
+   }
+}
+
+void Cons::setSysLED(ledCtrl *p){
+   if (sysLedCtrl!=NULL){
+      delete(sysLedCtrl);
+      sysLedCtrl=NULL;
+   }
+   sysLedCtrl=p;
+}
+
+
+
 void Cons::setup(){
-   Controller->console=this;
+   this->installStandardSysControl(3);
 }
 
 void Cons::loop(){
@@ -32,16 +174,18 @@ void Cons::set(int newMode){
    // Switch Operations //////////////
    if (newMode&CONS_SERIAL){
       delay(100);
-      Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
-      Serial.setDebugOutput(true);
+      Serial.begin(74880,SERIAL_8N1,SERIAL_TX_ONLY); // this is the standard!
+      //Serial.setDebugOutput(true);
      // This serial config allows to use GPIO3 (RX) as input as descripted at
      //http://www.forward.com.au/pfod/ESP8266/GPIOpins/ESP8266_01_pin_magic.html
       Serial.print("\n");
       delay(100);
       Serial.print("\n");
    }
-
-
+   if (newMode&CONS_LED){
+      pinMode(packlib_Cons_SysLED,OUTPUT);
+      digitalWrite(packlib_Cons_SysLED,HIGH);
+   }
 
    ///////////////////////////////////
    curMode=newMode;

@@ -1,13 +1,14 @@
 //
 // Activate all needed modules
 //
-#define THIN_REVSION "$Id$"
 #define packlib_WebSrv
 
 #define packlib_Cons
-//#define packlib_Cons_InitialMode CONS_SERIAL_AUTODISABLE
-#define packlib_Cons_InitialMode CONS_SERIAL
-#define DEBUG_ESP_PORT Serial
+#define packlib_Cons_SysLED LED_BUILTIN          // normal this is GPIO 1
+
+#define packlib_Cons_InitialMode CONS_SERIAL_AUTODISABLE|CONS_LED
+//#define packlib_Cons_InitialMode CONS_SERIAL
+
 
 #define packlib_simpleAuth
 
@@ -21,7 +22,7 @@
 
 #define packlib_KeepAlive
 
-#define packlib_NTPCli
+//#define packlib_NTPCli
 
 
 #define packlib_cfgEEPROM

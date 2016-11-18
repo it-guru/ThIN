@@ -1,10 +1,39 @@
 #include "./pack.h"
 
 
+#ifdef packlib_WebSrv
+const char simpleAuth_ModActionJavaScript[] PROGMEM =
+"define([\"action/SystemChangePasswd\"], function(SystemChangePasswd) {"
+"  return {"
+"    start: function() {"
+"      $(\"#main\").html(\"SystemChangePasswd loaded\");"
+"      return true;"
+"    },"
+"    end: function() {"
+"      return true;"
+"    }"
+"  }"
+"});";
+#endif
+
+
 void simpleAuth::setup(){
    CONS->printf("simpleAuth: setup() start\n");
    Controller->auth=this;
+
+   #ifdef packlib_WebSrv
+   WebSrv *w=(WebSrv *) Controller->findPack("websrv");
+   if (w!=NULL){
+      const char *m[] = {"System","Change Password", NULL };
+      w->regMod("SystemChangePasswd",[&]
+                (Session &session,ESP8266WebServer *s,String &p)->bool{
+         s->send_P(200,PSTR("text/javascript"),simpleAuth_ModActionJavaScript);
+         return(true);
+      },m);
+   }
+   #endif
 }
+
 
 bool simpleAuth::authUser(String &user,String &pass,long *puid, int8_t *paLev){
    int8_t uid=0;

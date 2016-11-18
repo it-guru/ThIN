@@ -4,7 +4,9 @@
 #include "../../kernel/PackMaster.h"
 #include "../../config.h"
 
-
+#ifdef packlib_WebSrv
+#include "../WebSrv/pack.h"
+#endif
 
 
 

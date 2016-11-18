@@ -66,14 +66,31 @@ const char GenDevCtrl_ModActionJavaScript[] PROGMEM =
 
 void GenDevCtrl::setup(){
    
-   // Controller->setupStandardSysBtn(3);
+   //CONS->installStandardSysControl(3);
+
+//   Controller->addInterval(new Interval(20,
+//      if (digitalRead(3)){
+//         Controller->addInterval(new Interval(1000,
+//                                [&](long cnt,int intervalFlag)->long{
+//            int pio=2;
+//            if (gpioLst[pio].curBlinkState){
+//               gpioLst[pio].curBlinkState=false;
+//               CONS->setSysLED(0);
+//            }
+//            else{
+//               gpioLst[pio].curBlinkState=true;
+//               CONS->setSysLED(1023);
+//            }
+//            return(cnt);
+//         }));
+//
+//      }
+//   }
 
 
    int pio=0;
 
    pinMode(pio,INPUT);
-   pinMode(pio,OUTPUT);
-   digitalWrite(pio,LOW);
    gpioLst[pio].DevicePos=Controller->registerDevice(DIN,"GPIO0");
    gpioLst[pio].i=new Interval(20,[&](long cnt,int intervalFlag)->long{
       this->monGPIO(0);
@@ -82,23 +99,16 @@ void GenDevCtrl::setup(){
 
    pio=2;
    pinMode(pio,OUTPUT);
-   digitalWrite(pio,LOW);
-   delay(200);  // ms
-   digitalWrite(pio,HIGH);
-   delay(200);  // ms
-   digitalWrite(pio,LOW);
-   delay(200);  // ms
-
 
    gpioLst[pio].DevicePos=Controller->registerDevice(DOT,"GPIO2");
 
-   pio=3;
-   pinMode(pio,INPUT_PULLUP);
-   gpioLst[pio].DevicePos=Controller->registerDevice(DIN,"GPIO3");
-   gpioLst[pio].i=new Interval(20,[&](long cnt,int intervalFlag)->long{
-      this->monGPIO(3);
-      return(cnt);
-   }); 
+//   pio=3;
+//   pinMode(pio,INPUT_PULLUP);
+//   gpioLst[pio].DevicePos=Controller->registerDevice(DIN,"GPIO3");
+//   gpioLst[pio].i=new Interval(20,[&](long cnt,int intervalFlag)->long{
+//      this->monGPIO(3);
+//      return(cnt);
+//   }); 
 
    #ifdef packlib_WebSrv
    WebSrv *w=(WebSrv *) Controller->findPack("websrv");

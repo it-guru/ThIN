@@ -83,6 +83,7 @@ bool WebSrv::json_WebSrvStatus(Session &session,ESP8266WebServer *s,String &p){
   data["Load"]=String((long) Controller->load(),DEC);
 
   data["Hostname"]=String(Controller->hostname());
+  data["Version"]=String(__DATE__ " - " __TIME__);
 
   data["sessionUser"]=curWebSession->session.user;
 
