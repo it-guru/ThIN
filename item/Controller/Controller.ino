@@ -47,11 +47,15 @@
 #endif
 
 PackMaster PM;
+PackMaster *Controller=&PM;
+
+
 
 void setup(){
 
    
    WiFi.onEvent([](WiFiEvent_t e){            // needed to dispatch Network
+      CONS->printf("WiFiEvent %d\n",e);
       PM.handleWiFiEvent(e);                  // Events
    }); 
 

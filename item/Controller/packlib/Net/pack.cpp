@@ -1,7 +1,7 @@
 #include "./pack.h"
 
 void Net::setup(){
-   Connect();
+  // Connect();
 }
 
 void Net::loop(){
@@ -21,17 +21,24 @@ void Net::loop(){
       if (WpsStep==2 && WiFi.status()!=WL_CONNECTED){
          CONS->printf("WpsStep 2 - WiFi is now disconnected\n");
          WiFi.mode(WIFI_OFF);
+         delay(1000);
          WpsStep++;
          WpsTimer=t;
       }
       if (WpsStep==3 && (WpsTimer+4000)<t){
          CONS->printf("WpsStep 3 - now starting WPSConfig()\n");
          WiFi.mode(WIFI_STA);
-         delay(100);
+         delay(1000);
+         CONS->printf("WpsStep 3 - begin set\n");
+         yield();
          WiFi.beginWPSConfig();
          delay(500);
+         CONS->printf("WpsStep 3 - waiting\n");
          WpsStep++;
          WpsTimer=t;
+      }
+      if (WpsStep>3){
+         CONS->printf("WpsStep 3 - waiting ...\n");
       }
       if (WpsStep==4 && (WpsTimer+2000)<t){
          CONS->printf("WpsStep 4 - checking WL_CONNECT\n");
@@ -68,11 +75,7 @@ void Net::handleWiFiEvent(WiFiEvent_t e){
    }
 }
 
-void Net::handleSystemEvent(SysEvent *e,const char *source){
-   char *src="unkonwn";
-   if (src!=NULL){
-      src=(char *)source;
-   }
+void Net::handleSystemEvent(SysEvent *e,const char *src){
    switch(e->type) {
       case SYS_EVENT_TRIGGERWPS:
          if (WpsStep==0){
@@ -94,7 +97,6 @@ void Net::Connect(){
   }
   else{
      CONS->printf("Begin Network config ...\n");
-   //  WiFi.begin("095449871027-R","CodeREedIs752272aA");
      yield();
      WiFi.begin("","");
      yield();

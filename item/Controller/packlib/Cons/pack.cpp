@@ -18,100 +18,12 @@ Cons::Cons(int t){
 }
 
 
-class BtnCtrl{
-   PackMaster *Controller;
-   Interval   *pInt=NULL;
-   long *pressLevels;
-   int  mode;  // RISING pressed=high ; FALLING pressed=low
-   long pressTime=0;
-   bool pressedTarget=true;
-   int  curPressLevel=-2;
-   int gpio;
-   public:
-   BtnCtrl(PackMaster *Controller,int gpio,int mode,long *pressLevels){
-       this->Controller=Controller;
-       this->pressLevels=pressLevels;
-       this->gpio=gpio;
-       this->mode=mode;
-       this->mode=RISING;
-       this->initBtn();
-   };
-   BtnCtrl(PackMaster *Controller,int gpio){
-       this->Controller=Controller;
-       static long pressLevels[]={20,    // entprellen
-                                3000,  // fast blink
-                                3100,  // hot for WPS
-                                10000, // unhot for WPS
-                                30000, // hot deep reset
-                                0};
-       this->gpio=gpio;
-       this->pressLevels=(long *)pressLevels;
-       this->mode=FALLING;
-       this->initBtn();
-   };
-   ~BtnCtrl(){
-      if (this->pInt!=NULL){
-         delete(this->pInt);
-         this->pInt=NULL;
-      }
-   }
-   void pressLevelHandler(int oldLevel,int newLevel){
-       if (newLevel==0){
-          CONS->printf("SYSLED: on\n");
-          CONS->setSysLED(true);
-       } 
-       if (newLevel==1){
-          CONS->printf("SYSLED: short blink\n");
-          CONS->setSysLED(new ledCtrl(Controller,700));
-       }
-       if (newLevel==3){
-          CONS->printf("SYSLED: short sinblink\n");
-          CONS->setSysLED(new ledCtrl(Controller,4000,-50));
-       }
-       if (newLevel<0){
-          CONS->printf("SYSLED: off\n");
-          CONS->setSysLED(false);
-       }
-       CONS->printf("pressLevelHandler: oldLevel=%d newLevel=%d\n",
-                    oldLevel,newLevel);
-   };
-   void initBtn(){
-      if (this->mode==FALLING){
-         pressedTarget=false;
-      }
-      pInt=Controller->addInterval(new Interval(10,
-                               [&](long cnt,int iFlag)->long{
-         long now=millis();
-         if (digitalRead(gpio)==pressedTarget){
-            if (curPressLevel==-2){
-               pressTime=now;
-               curPressLevel++;
-            }
-            if (curPressLevel>-2){
-               if (now-pressTime>pressLevels[curPressLevel+1]){
-                  int oldPressLevel=curPressLevel;
-                  curPressLevel++;
-                  pressLevelHandler(oldPressLevel,curPressLevel);      
-               }
-            }
-         }
-         else{
-            if (curPressLevel>-2){
-               pressLevelHandler(curPressLevel,-1);
-               curPressLevel=-2; 
-            }
-         }
-         return(cnt);
-      }));
-   };
-};
-
 
 
 bool Cons::installStandardSysControl(int pio){
    pinMode(pio,INPUT); 
    CONS->printf("Cons::installStandardSysControl on gpio=%d\n",pio);
-   BtnCtrl *b=new BtnCtrl(Controller,pio);
+   sysBtnCtrl=new BtnCtrl(pio,"SYS");
    return(true);
 }
 
@@ -229,6 +141,12 @@ size_t Cons::write(uint8_t c){
       Serial.write(c);
    }
    return(1);
+}
+
+void Cons::handleSystemEvent(SysEvent *e,const char *source){
+   if (sysBtnCtrl!=NULL){
+      sysBtnCtrl->handleSystemEvent(e,source);
+   }
 }
 
 int Cons::command(Session *session,Print *cli,char **args,int argn){

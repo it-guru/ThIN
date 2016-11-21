@@ -60,11 +60,11 @@ void KeepAlive::setup(){
    CONS->printf("KeepAlive: Monitor setup() done\n");
 
 
-   char *serial=Controller->cfg->getVar(Name(),"serial");
-   if (serial==NULL){
-      CONS->printf("KeepAlive: serial not set - setting it\n");
-      serial=Controller->cfg->setVar(Name(),"serial","11833");
-   }
+//   char *serial=Controller->cfg->getVar(Name(),"serial");
+//   if (serial==NULL){
+//      CONS->printf("KeepAlive: serial not set - setting it\n");
+//      serial=Controller->cfg->setVar(Name(),"serial","11833");
+//   }
 
  //  serial=Controller->cfg->setVar(Name(),"serial9","11x33");
  //  serial=Controller->cfg->setVar(Name(),"serial1","11x33");
@@ -86,12 +86,12 @@ void KeepAlive::setup(){
          this->keepAliveMessageWeb(s,p);
          return(true);
       });
-      const char *m[] = {"System","KeepAlive", NULL };
-      w->regMod("SystemKeepAlive",[&]
-                (Session &session,ESP8266WebServer *s,String &p)->bool{
-         s->send_P(200,PSTR("text/javascript"),KeepAlive_ModActionJavaScript); 
-         return(true);
-      },m);
+      //const char *m[] = {"System","KeepAlive", NULL };
+      //w->regMod("SystemKeepAlive",[&]
+      //          (Session &session,ESP8266WebServer *s,String &p)->bool{
+      //  s->send_P(200,PSTR("text/javascript"),KeepAlive_ModActionJavaScript); 
+      //   return(true);
+      //},m);
    }
    #endif
 }

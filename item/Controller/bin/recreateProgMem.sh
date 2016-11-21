@@ -17,6 +17,8 @@ cat <<EOF > ${CDIR}.cpp
 #include "./pack.h"
 #include "./${CDIR}.hpp"
 
+#ifdef packlib_WebSrv
+
 void ${PACK}::${CDIR}(){
 EOF
 echo "" > ${CDIR}.hpp
@@ -53,23 +55,23 @@ find ${CDIR} -name \*.js -o -name \*.html -o -name \*.css -o \
    cat ${CDIR}.tmp >> ${CDIR}.hpp
    rm ${CDIR}.tmp
    if [[ $f =~ \.css$ ]]; then
-      echo "   srv->send_P(200,PSTR(\"text/css\"),${D}_DATA,${D}_LENGTH);" \
+      echo "   s->send_P(200,PSTR(\"text/css\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp
    fi
    if [[ $f =~ \.html$ ]]; then
-      echo "   srv->send_P(200,PSTR(\"text/html\"),${D}_DATA,${D}_LENGTH);" \
+      echo "   s->send_P(200,PSTR(\"text/html\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp
    fi
    if [[ $f =~ \.js$ ]]; then
-      echo "   srv->send_P(200,PSTR(\"text/javascript\"),${D}_DATA,${D}_LENGTH);" \
+      echo "   s->send_P(200,PSTR(\"text/javascript\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp
    fi
    if [[ $f =~ \.gif$ ]]; then
-      echo "   srv->send_P(200,PSTR(\"image/gif\"),${D}_DATA,${D}_LENGTH);" \
+      echo "   s->send_P(200,PSTR(\"image/gif\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp
    fi
    if [[ $f =~ \.svg$ ]]; then
-      echo "   srv->send_P(200,PSTR(\"image/svg+xml\"),${D}_DATA,${D}_LENGTH);" \
+      echo "   s->send_P(200,PSTR(\"image/svg+xml\"),${D}_DATA,${D}_LENGTH);" \
            >>${CDIR}.cpp
    fi
 
@@ -81,6 +83,7 @@ done
 cat <<EOF >> ${CDIR}.cpp
 
 }
+#endif
 EOF
 
 )

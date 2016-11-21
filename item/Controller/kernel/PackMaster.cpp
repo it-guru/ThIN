@@ -17,7 +17,6 @@ extern "C" {
 
 void PackMaster::add(const char *name,Pack *p){
    Pkg.set(name,p);
-   p->setController(this);
    p->Name(name);
    if (!strcmp(name,"console")){       // console can not be set in setup of 
       this->console=(PackStdCons*) p;  // because it is used already in setup
@@ -83,6 +82,10 @@ void PackMaster::DeepsleepUpdate(){
 
 
 void PackMaster::postSystemEvent(SysEvent *e,const char *source){
+   char *src="unkonwn";
+   if (src!=NULL){
+      src=(char *)source;
+   }
    if (e->type==SYS_EVENT_REQDEEPSLEEP){
       deepSleep=e->deepsleep.timer;
       deepSleepSleeptime=e->deepsleep.sleeptime;
@@ -92,7 +95,7 @@ void PackMaster::postSystemEvent(SysEvent *e,const char *source){
    }
    else{
       for(long c=0;c<Pkg.length();c++){
-         Pkg[c]->handleSystemEvent(e,source);
+         Pkg[c]->handleSystemEvent(e,src);
       }
    }
 }

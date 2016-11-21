@@ -14,6 +14,40 @@ const char simpleAuth_ModActionJavaScript[] PROGMEM =
 "    }"
 "  }"
 "});";
+
+
+bool simpleAuth::changePasswordHandler(
+                      Session &session,ESP8266WebServer *s,String &p){
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& r = jsonBuffer.createObject();
+  r["exitcode"]="0";
+  r["exitmsg"]="OK password changed";
+  r["time"]=millis();
+  String callback=s->arg("callback");
+
+  if (s->arg("newpassword")==s->arg("newpassword2")){
+     String oldpass(s->arg("oldpassword"));
+     String newpass(s->arg("newpassword"));
+     bool chpass=this->changeUserPassword(session.user,oldpass,newpass);
+     if (!chpass){
+        r["exitcode"]="20";
+        r["exitmsg"]="password change failed";
+     }
+  }
+  else{
+     r["exitcode"]="10";
+     r["exitmsg"]="new password repeat is not identical";
+  }
+
+
+  String dstr;
+  r.prettyPrintTo(dstr);
+  s->send(200, "application/javascript",callback+"("+dstr+");");
+  return(true);
+}
+
+
+
 #endif
 
 
@@ -29,7 +63,11 @@ void simpleAuth::setup(){
                 (Session &session,ESP8266WebServer *s,String &p)->bool{
          s->send_P(200,PSTR("text/javascript"),simpleAuth_ModActionJavaScript);
          return(true);
-      },m);
+      },m,50);
+      w->regNS("/jssys/changePassword",[&]
+                  (Session &session,ESP8266WebServer *s,String &p)->bool{
+         return(this->changePasswordHandler(session,s,p));
+      });
    }
    #endif
 }

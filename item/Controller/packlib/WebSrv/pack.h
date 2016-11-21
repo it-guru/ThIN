@@ -63,6 +63,9 @@ class WebSrv : public Pack {
    WebSession *curWebSession;
 
    void addTreeLevel(String &js,int mLevel,modTreeRec *b);
+   #ifdef packlib_WebSrv
+   void progCont();
+   #endif
 
    public:
    ESP8266WebServer *srv=NULL;
@@ -91,7 +94,6 @@ class WebSrv : public Pack {
 
    void onRequest();
    bool onRestRequest(Session &session,ESP8266WebServer *s,String &p);
-   void progCont();
    void regNS(char *p,reqHandler f);
    void regMod(char *p,reqHandler action=NULL,const char** mp=NULL ,
                int8_t minAuthLevel=0);

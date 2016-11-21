@@ -205,11 +205,7 @@ void GenDevCtrl::loop(){
    }
 }
 
-void GenDevCtrl::handleSystemEvent(SysEvent *e,const char *source){
-   char *src="unkonwn";
-   if (src!=NULL){
-      src=(char *)source;
-   }
+void GenDevCtrl::handleSystemEvent(SysEvent *e,const char *src){
    switch(e->type) {
       case SYS_EVENT_DEVREQCHANGE:
          CONS->printf("got request to change device %d from '%s'\n",

@@ -618,11 +618,7 @@ void WebSrv::handleWiFiEvent(WiFiEvent_t e){
    }
 }
 
-void WebSrv::handleSystemEvent(SysEvent *e,const char *source){
-   char *src="unkonwn";
-   if (src!=NULL){
-      src=(char *)source;
-   }
+void WebSrv::handleSystemEvent(SysEvent *e,const char *src){
    switch(e->type) {
       case SYS_EVENT_DEVLOCCHANGE:
          if (wss!=NULL){

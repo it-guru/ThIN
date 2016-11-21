@@ -243,11 +243,7 @@ void fhem::handleWiFiEvent(WiFiEvent_t e){
    }
 }
 
-void fhem::handleSystemEvent(SysEvent *e,const char *source){
-   char *src="unkonwn";
-   if (src!=NULL){
-      src=(char *)source;
-   }
+void fhem::handleSystemEvent(SysEvent *e,const char *src){
    switch(e->type) {
       case SYS_EVENT_DEVLOCCHANGE:
          CONS->printf("got local device change notification %d from '%s'\n",

@@ -8,9 +8,12 @@
 #include "../include/DynHashTable.hpp"
 #include "../include/Interval.hpp"
 
+class PackMaster;
 class Pack;
 class PackStdCons;
 class PackStdNet;
+
+extern PackMaster *Controller;
 
 class Session
 {
@@ -167,7 +170,6 @@ class PackMaster
    private:
    DynHashTable<Pack *> Pkg;
    DynHashTable<int> Dev;
-   PackMaster *Controller=NULL;
    long              tickscount=0;
    unsigned long     deepSleep=0;
    unsigned long     deepSleepSleeptime=0;
@@ -181,7 +183,6 @@ class PackMaster
    AuthPack       *auth=NULL; 
    PackStdCons    *console=NULL;
    PackMaster(){
-      Controller=this;
    }
    void add(const char *name,Pack *p);
 
@@ -215,12 +216,8 @@ class PackMaster
 
 class Pack{
    protected:
-   PackMaster *Controller=NULL;
    String     PackName;
    public:
-   void setController(PackMaster *p){
-      Controller=p;
-   };
    void Name(char *name){
       PackName=name;
    };
@@ -291,7 +288,7 @@ String md5sum(String text);
 String byte2hex(byte Zahl);
 
 
-
-#define CONS this->Controller->Console()
+//#define CONS this->Controller->Console()
+#define CONS Controller->Console()
 
 #endif
