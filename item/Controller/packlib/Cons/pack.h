@@ -154,7 +154,7 @@ class BtnCtrl{
        if (newLevel<0 && (oldLevel==1 || oldLevel==2)){
           CONS->printf("Trigger: WPS Start\n");
           SysEvent e;
-          e.type=SYS_EVENT_TRIGGERWPS;
+          e.type=SYS_EVENT_WPS_START;
           Controller->postSystemEvent(&e,NULL);
        }
        else if (newLevel<0){
@@ -187,6 +187,9 @@ class BtnCtrl{
                }
                e->dev.cnt++;
             }
+         break;
+         case SYS_EVENT_WPS_END:
+            CONS->setSysLED(false);
          break;
       }
    };

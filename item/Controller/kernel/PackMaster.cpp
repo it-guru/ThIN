@@ -273,8 +273,18 @@ int PackMaster::command(Session *session,Print *cli,String &cmd){
 }
 
 void PackMaster::handleWiFiEvent(WiFiEvent_t event){
+   if (event==WIFI_EVENT_STAMODE_DISCONNECTED){
+      SysEvent e;
+      e.type=SYS_EVENT_NET_DOWN;
+      Controller->postSystemEvent(&e,"PackMaster");
+   }
    for(long c=0;c<Pkg.length();c++){
       Pkg[c]->handleWiFiEvent(event);
+   }
+   if (event==WIFI_EVENT_STAMODE_GOT_IP){
+      SysEvent e;
+      e.type=SYS_EVENT_NET_UP;
+      Controller->postSystemEvent(&e,"PackMaster");
    }
 }
 

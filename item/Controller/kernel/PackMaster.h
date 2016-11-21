@@ -73,12 +73,15 @@ static const char *SysDeviceName[]={
 typedef enum SysEventType
 {
    SYS_EVENT_REBOOT    = 100,
-   SYS_EVENT_TRIGGERWPS,     // request device to go in WPS mode
+   SYS_EVENT_WPS_START,      // request device to go in WPS mode
+   SYS_EVENT_WPS_END,        // request device to go in WPS mode
    SYS_EVENT_REQDEEPSLEEP,   // DeepSleep anfordern (vom Pack aus)
    SYS_EVENT_DEEPSLEEP,      // Event kurz vor DeepSleep (500ms dann deppslepp)
    SYS_EVENT_DEVLOCCHANGE,   // local change of Device
    SYS_EVENT_DEVREQCHANGE,   // request Device to change (f.e. from any server)
-   SYS_EVENT_DEVQUERY        // query state of a logical Device
+   SYS_EVENT_DEVQUERY,       // query state of a logical Device
+   SYS_EVENT_NET_UP,
+   SYS_EVENT_NET_DOWN,
 } SysEvent_t;
 
 typedef struct SysEv_d{

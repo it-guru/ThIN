@@ -50,10 +50,7 @@ class TelSrv : public Pack {
 
    public:
    WiFiServer *srv=NULL;
-   TelSrv(){
-      memset(serverClients,'\0',sizeof(serverClients));
-      srv=new WiFiServer(23);
-   };
+   TelSrv(){ };
    void startListener();
    void stopListener();
    virtual void setup();

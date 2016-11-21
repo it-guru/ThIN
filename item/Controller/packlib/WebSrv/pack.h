@@ -71,8 +71,6 @@ class WebSrv : public Pack {
    ESP8266WebServer *srv=NULL;
    WebSocketsServer *wss=NULL;
    WebSrv(){
-      srv=new ESP8266WebServer(80);
-      wss=new WebSocketsServer(81);
       ns=new reqNode();
       pWebSessions=new WebSession();
       pWebSessions->session.user="anonymous";

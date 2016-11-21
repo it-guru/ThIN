@@ -607,13 +607,27 @@ void WebSrv::handleWiFiEvent(WiFiEvent_t e){
    switch(e) {
       case WIFI_EVENT_STAMODE_GOT_IP:
          CONS->printf("start WebServer\n");
-         srv->begin();
-         wss->begin();
+         srv=new ESP8266WebServer(80);
+         if (srv!=NULL){
+            srv->begin();
+         }
+         wss=new WebSocketsServer(81);
+         if (wss!=NULL){
+            wss->begin();
+         }
          break;
       case WIFI_EVENT_STAMODE_DISCONNECTED:
          CONS->printf("disconnect WebServer\n");
-         srv->stop();
-         wss->disconnect();
+         if (srv!=NULL){
+            srv->stop();
+            delete(srv);
+            srv=NULL;
+         }
+         if (wss!=NULL){
+            wss->disconnect();
+            delete(wss);
+            wss=NULL;
+         }
          break;
    }
 }
@@ -636,10 +650,16 @@ void WebSrv::handleSystemEvent(SysEvent *e,const char *src){
                msg+=String(e->dev.D.state, DEC);
                CONS->printf("WebSocket Server broadcast '%s'\n",msg.c_str());
                msg+="\n";
-               wss->broadcastTXT(msg);
+               if (wss!=NULL){
+                  wss->broadcastTXT(msg);
+               }
             }
          }
          break;
+      case SYS_EVENT_NET_UP:
+         setup();
+         break;
+
    }
 }
 

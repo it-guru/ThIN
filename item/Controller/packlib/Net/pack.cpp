@@ -37,9 +37,6 @@ void Net::loop(){
          WpsStep++;
          WpsTimer=t;
       }
-      if (WpsStep>3){
-         CONS->printf("WpsStep 3 - waiting ...\n");
-      }
       if (WpsStep==4 && (WpsTimer+2000)<t){
          CONS->printf("WpsStep 4 - checking WL_CONNECT\n");
          if (WiFi.status() == WL_CONNECTED){
@@ -52,10 +49,16 @@ void Net::loop(){
       if ((WpsStart+40000)<t){
          CONS->printf("WpsStep - FAIL - giving up\n");
          WpsStep=0;
+         SysEvent e;
+         e.type=SYS_EVENT_WPS_END;
+         Controller->postSystemEvent(&e,PackName.c_str());
       }
       if (WpsStep==5){
          CONS->printf("WpsStep 5 SUCCESS - WPS end\n");
          WpsStep=0;
+         SysEvent e;
+         e.type=SYS_EVENT_WPS_END;
+         Controller->postSystemEvent(&e,PackName.c_str());
       }
    }
 }
@@ -77,7 +80,7 @@ void Net::handleWiFiEvent(WiFiEvent_t e){
 
 void Net::handleSystemEvent(SysEvent *e,const char *src){
    switch(e->type) {
-      case SYS_EVENT_TRIGGERWPS:
+      case SYS_EVENT_WPS_START:
          if (WpsStep==0){
             WpsStep=1;
             CONS->printf("got request for WPS mode Net::handleSystemEvent\n");

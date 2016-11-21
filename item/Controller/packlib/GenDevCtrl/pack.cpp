@@ -183,7 +183,7 @@ void GenDevCtrl::monGPIO(int pio){
                   if (!gpioLst[pio].curLongState){
                      CONS->printf("fifi trigger WPS\n");
                      SysEvent e;
-                     e.type=SYS_EVENT_TRIGGERWPS;
+                     e.type=SYS_EVENT_WPS_START;
                      gpioLst[pio].curLongState=true;
                      Controller->postSystemEvent(&e,PackName.c_str());
                   }
