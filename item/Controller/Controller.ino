@@ -73,7 +73,7 @@ void setup(){
    #ifdef packlib_GenDevCtrl
       PM.add("gendevctrl",new GenDevCtrl());
    #endif
-   PM.IntervalLoop();
+   PM.IntervalLoop(true);
 
   
  
@@ -115,10 +115,10 @@ void setup(){
       PM.add("fhem",      new fhem());
    #endif 
    PM.Console()->printf("PackMaster Packs registered\n");
-   PM.IntervalLoop();
+   PM.IntervalLoop(true);
    PM.setup();
    PM.Console()->printf("PackMaster Packs setuped\n");
-   PM.IntervalLoop();
+   PM.IntervalLoop(true);
    PM.begin();
    PM.Console()->printf("PackMaster Packs begined\n");
 }

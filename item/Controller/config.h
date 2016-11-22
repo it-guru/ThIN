@@ -6,8 +6,8 @@
 #define packlib_Cons
 #define packlib_Cons_SysLED LED_BUILTIN          // normal this is GPIO 1
 
-//#define packlib_Cons_InitialMode CONS_SERIAL_AUTODISABLE|CONS_LED
-#define packlib_Cons_InitialMode CONS_SERIAL
+#define packlib_Cons_InitialMode CONS_SERIAL_AUTODISABLE|CONS_LED
+//#define packlib_Cons_InitialMode CONS_SERIAL
 
 
 #define packlib_simpleAuth

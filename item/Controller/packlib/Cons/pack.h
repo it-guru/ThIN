@@ -29,7 +29,7 @@ class ledCtrl{
       this->repeat=r;
       this->wave=w;
       t0=millis();
-      ctrlLed=Controller->addInterval(new Interval(10,
+      ctrlLed=Controller->addInterval(false,new Interval(20,
                                        [&](long cnt,int intervalFlag)->long{
          long now=millis();
          long zyclePos=now-t0;
@@ -66,7 +66,7 @@ class ledCtrl{
    };
    ~ledCtrl(){
       //CONS->printf("intervall delete %x\n",ctrlLed);
-      ctrlLed=Controller->delInterval(ctrlLed);
+      ctrlLed=Controller->delInterval(false,ctrlLed);
    }
    void setLED(float level){
       String lstr(level,2);
@@ -200,7 +200,7 @@ class BtnCtrl{
       devBtnPos=Controller->registerDevice(DIN,"SYS_BTN");
       devSwiPos=Controller->registerDevice(DIN,"SYS_SWI");
 
-      pInt=Controller->addInterval(new Interval(10,
+      pInt=Controller->addInterval(true,new Interval(10,
                                [&](long cnt,int iFlag)->long{
          long now=millis();
          if (digitalRead(gpio)==pressedTarget){

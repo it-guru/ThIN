@@ -7,6 +7,7 @@
 #include "../config.h"
 #include "../include/DynHashTable.hpp"
 #include "../include/Interval.hpp"
+#include <Ticker.h>
 
 class PackMaster;
 class Pack;
@@ -176,7 +177,8 @@ class PackMaster
    long              tickscount=0;
    unsigned long     deepSleep=0;
    unsigned long     deepSleepSleeptime=0;
-   Interval *pInterval=NULL;
+   Interval *pSoftInterval=NULL;
+   Interval *pHardInterval=NULL;
 
    public:
    unsigned long     deepSleepDeadLine=0;
@@ -185,8 +187,8 @@ class PackMaster
    ConfigPack     *cfg=NULL; 
    AuthPack       *auth=NULL; 
    PackStdCons    *console=NULL;
-   PackMaster(){
-   }
+   Ticker         *t;
+   PackMaster();
    void add(const char *name,Pack *p);
 
    int  registerDevice(SysDeviceType t,const char *name);
@@ -197,9 +199,9 @@ class PackMaster
 
    long  load();
 
-   void     IntervalLoop();
-   Interval *addInterval(Interval *iobj);
-   Interval *delInterval(Interval *pI);
+   void     IntervalLoop(bool isSoft);
+   Interval *addInterval(bool isSoft,Interval *iobj);
+   Interval *delInterval(bool isSoft,Interval *pI);
 
    Pack *findPack(const char *name);
    void setup();

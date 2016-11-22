@@ -12,7 +12,15 @@ extern "C" {
 
 }
 
+void hardInterval(){
+   Controller->IntervalLoop(false); 
+}
 
+
+PackMaster::PackMaster(){
+   t=new Ticker();
+   t->attach_ms(20,hardInterval);
+}
 
 
 void PackMaster::add(const char *name,Pack *p){
@@ -113,20 +121,6 @@ long PackMaster::load(){
    return(l);
 }
 
-void PackMaster::IntervalLoop(){
-   Interval *pI=pInterval;
-   while(pI!=NULL){
-      Interval *pOp=pI;
-      long cnt=pOp->loop();
-      pOp=pOp->pNext;
-      if (!cnt){
-         CONS->printf("delete=%x %ld\n",pOp,cnt);
-         delInterval(pI);
-      }
-      pI=pOp;
-   }
-}
-
 void PackMaster::loop(){
    unsigned t1=get_ccount();
    for(long c=0;c<Pkg.length();c++){
@@ -142,51 +136,63 @@ void PackMaster::loop(){
       delay(500);
       ESP.deepSleep(deepSleepSleeptime*1000000);
    }
-   this->IntervalLoop();
+   this->IntervalLoop(true);
 }
 
-Interval *PackMaster::addInterval(Interval *iObj){
+//  *********************************************************************
+void PackMaster::IntervalLoop(bool isSoft){
+   Interval *pI=pHardInterval;
+   if (isSoft){
+      pI=pSoftInterval;
+   }
+   while(pI!=NULL){
+      Interval *pOp=pI;
+      long cnt=pOp->loop();
+      pOp=pOp->pNext;
+      if (!cnt) delInterval(isSoft,pI);
+      pI=pOp;
+   }
+}
+
+Interval *PackMaster::addInterval(bool isSoft,Interval *iObj){
+   Interval **pStart=&pHardInterval;
+   if (isSoft){
+      pStart=&pSoftInterval;
+   }
    iObj->pNext=NULL;
-   if (pInterval==NULL){
-      pInterval=iObj;
+   if (*pStart==NULL){
+      *pStart=iObj;
    }
    else{
-      Interval *pI=pInterval;
-      while(pI->pNext!=NULL){
-         pI=pI->pNext;
-      }
+      Interval *pI=*pStart;
+      while(pI->pNext!=NULL) pI=pI->pNext;
       pI->pNext=iObj;
    }
    return(iObj);
 }
 
-Interval *PackMaster::delInterval(Interval *pIdel){
-  if (pInterval==pIdel){
-     if (pInterval->pNext==NULL){
-        pInterval=NULL;
-     }
-     else{
-        pInterval=pInterval->pNext;
-     }
-  }
-  else{
-     Interval *pI=pInterval;
-     do{
-       Interval *pOld=pI;
-       pI=pI->pNext;
-       if (pI==pIdel){
-          if (pI->pNext==NULL){
-             pOld->pNext=NULL;
-          }
-          else{
-             pOld->pNext=pI->pNext;
-          }
-       }
-     }while(pI!=NULL);
-  }
-  delete(pIdel);
-  return(NULL);
+Interval *PackMaster::delInterval(bool isSoft,Interval *pIdel){
+   Interval **pStart=&pHardInterval;
+   if (isSoft){
+      pStart=&pSoftInterval;
+   }
+   if (*pStart==pIdel){
+      *pStart=((*pStart)->pNext==NULL) ? NULL : (*pStart)->pNext;
+   }
+   else{
+      Interval *pI=*pStart;
+      do{
+        Interval *pOld=pI;
+        pI=pI->pNext;
+        if (pI==pIdel){
+           pOld->pNext=pI->pNext==NULL ? NULL : pI->pNext;
+        }
+      }while(pI!=NULL);
+   }
+   delete(pIdel);
+   return(NULL);
 }
+//  *********************************************************************
 
 
 int PackMaster::command(Session *session,Print *cli,String &cmd){
