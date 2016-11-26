@@ -1,0 +1,35 @@
+<html>
+<body>
+<br>
+CH1 = Reset PIN<br>
+CH2 = GPIO1<br>
+<b>GPIO0 PowerUp signal flow:</b><br>
+<img src="gpio0powerup.jpg"><br>
+<br>
+<br>
+CH1 = Reset PIN<br>
+CH2 = GPIO2<br>
+<b>GPIO2 PowerUp signal flow:</b><br>
+<img src="gpio2powerup.jpg"><br>
+<br>
+<br>
+<b>Code:</b><br>
+<pre>
+void setup() {
+   digitalWrite(0, HIGH);
+   digitalWrite(2, HIGH);
+   pinMode(2, OUTPUT);
+   pinMode(0, OUTPUT);
+   digitalWrite(0, LOW);
+   digitalWrite(2, LOW);
+   delay(10);
+   digitalWrite(0, HIGH);
+   digitalWrite(2, HIGH);
+   delay(10);
+   digitalWrite(0, LOW);
+   digitalWrite(2, LOW);
+}
+void loop() {} 
+</pre>
+</body>
+</html>
