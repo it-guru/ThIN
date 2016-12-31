@@ -1,21 +1,9 @@
 #include "./pack.h"
+#include "./progCont.h"
+
 
 
 #ifdef packlib_WebSrv
-const char simpleAuth_ModActionJavaScript[] PROGMEM =
-"define([\"action/SystemChangePasswd\"], function(SystemChangePasswd) {"
-"  return {"
-"    start: function() {"
-"      $(\"#main\").html(\"SystemChangePasswd loaded\");"
-"      return true;"
-"    },"
-"    end: function() {"
-"      return true;"
-"    }"
-"  }"
-"});";
-
-
 bool simpleAuth::changePasswordHandler(
                       Session &session,ESP8266WebServer *s,String &p){
   DynamicJsonBuffer jsonBuffer;
@@ -45,9 +33,6 @@ bool simpleAuth::changePasswordHandler(
   s->send(200, "application/javascript",callback+"("+dstr+");");
   return(true);
 }
-
-
-
 #endif
 
 
@@ -61,7 +46,9 @@ void simpleAuth::setup(){
       const char *m[] = {"System","Change Password", NULL };
       w->regMod("SystemChangePasswd",[&]
                 (Session &session,ESP8266WebServer *s,String &p)->bool{
-         s->send_P(200,PSTR("text/javascript"),simpleAuth_ModActionJavaScript);
+         s->send_P(200,PSTR("text/javascript"),
+                   PSTR_SIMPLEAUTH__JSACT_SYSTEMCHANGEPASSWD_JS_DATA(),
+                   SIMPLEAUTH__JSACT_SYSTEMCHANGEPASSWD_JS_LENGTH);
          return(true);
       },m,50);
       w->regNS("/jssys/changePassword",[&]

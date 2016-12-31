@@ -145,7 +145,7 @@ class cfgEEPROM : public Pack, public ConfigPack {
          if (!packObj->validateVariable(svar,oval,sval,msg)){
             return(false);
          }
-         if (oval==NULL || sval!=val){
+         if (oval==NULL || sval!=oval){
             setVar(var,sval.c_str());
          }
       }

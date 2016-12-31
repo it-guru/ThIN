@@ -90,12 +90,18 @@ typedef struct SysEv_d{
    boolean state;
 } SysEv_d_Struct;
 
+typedef struct SysEv_a{
+   long    devicepos;
+   float   state;
+} SysEv_a_Struct;
+
 typedef struct SysEv_dev{
    struct {
       long    devicepos;
       int     cnt=0;
       union {
          SysEv_d    D; 
+         SysEv_a    A; 
       };
    };
 

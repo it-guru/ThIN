@@ -9,11 +9,14 @@
 #endif
 
 
-
 class simpleAuth : public Pack, public AuthPack {
    protected:
 
    private:
+   #ifdef packlib_WebSrv
+   void progCont();
+   #endif
+
 
    public:
    void setup();

@@ -368,6 +368,21 @@ bool WebSrv::onRestRequest(Session &session,ESP8266WebServer *s,String &p){
                root["exitmsg"]="OK";
             }
          }
+         else if (devType==AOT || devType==AIO){   // io or output 
+            e.dev.devicepos=devpos;
+            e.dev.A.state=param.toFloat();
+      CONS->printf("WebSrv: analog set on param:'%s'\n",param.c_str());
+            String tS(e.dev.A.state);
+            CONS->printf("Rest: postSystemEvent Analog new ='%s'\n",
+                         tS.c_str());
+            root["exitcode"]=101;
+            root["exitmsg"]="request posted but no response";
+            Controller->postSystemEvent(&e,PackName.c_str());
+            if (e.dev.cnt>0){
+               root["exitcode"]=0;
+               root["exitmsg"]="OK";
+            }
+         }
          else{
             root["exitcode"]=10;
             root["exitmsg"]="device definition error";
